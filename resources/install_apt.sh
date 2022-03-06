@@ -19,7 +19,6 @@ echo 60 > ${PROGRESS_FILE}
 sudo apt-get install -y python3-dev
 echo 70 > ${PROGRESS_FILE}
 BASEDIR=$(dirname "$0")
-sudo python3 -m pip install cffi
 meross_version=$(head -1 $BASEDIR/meross-iot_version.txt)
 sudo python3 -m pip install meross_iot==$meross_version
 echo 100 > ${PROGRESS_FILE}
