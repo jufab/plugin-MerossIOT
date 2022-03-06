@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
-import os
-import sys
-import time
 import argparse
-import logging
-import signal
-import threading
-import requests
+import asyncio
 import json
+import logging
+import os
+import signal
 import socketserver
-
+import sys
+import threading
+import time
 from datetime import datetime
+from typing import List
+
+import requests
+from meross_iot.controller.device import BaseDevice
+from meross_iot.controller.mixins.consumption import ConsumptionXMixin
+from meross_iot.controller.mixins.electricity import ElectricityMixin
+from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
-from meross_iot.meross_event import MerossEventType
-from meross_iot.cloud.devices.light_bulbs import GenericBulb
-from meross_iot.cloud.devices.power_plugs import GenericPlug
-from meross_iot.cloud.devices.door_openers import GenericGarageDoorOpener
-from meross_iot.cloud.devices.humidifier import GenericHumidifier, SprayMode
-from meross_iot.cloud.devices.hubs import GenericHub
-from meross_iot.cloud.devices.subdevices.thermostats import ValveSubDevice, ThermostatV3Mode
-
-from meross_iot.cloud.devices.light_bulbs import MODE_RGB, MODE_LUMINANCE, MODE_TEMPERATURE, to_rgb
-
+from meross_iot.model.enums import OnlineStatus, Namespace
 # Envoi vers Jeedom ------------------------------------------------------------
+from meross_iot.model.push.generic import GenericPushNotification
+
+
 class JeedomCallback:
     def __init__(self, apikey, url):
         self.apikey = apikey
@@ -57,9 +57,12 @@ class JeedomCallback:
     def _request(self, m):
         response = None
         logging.debug('Envoie à jeedom :  {}'.format(m))
-        r = requests.post('{}?apikey={}'.format(self.url, self.apikey), data=json.dumps(m), verify=False)
+        r = requests.post('{}?apikey={}'.format(self.url, self.apikey), data=json.dumps(m),
+                          verify=False)
         if r.status_code != 200:
-            logging.error('Erreur envoie requête à jeedom, return code {} - {}'.format(r.status_code, r.reason))
+            logging.error(
+                'Erreur envoie requête à jeedom, return code {} - {}'.format(r.status_code,
+                                                                             r.reason))
         else:
             response = r.json()
             logging.debug('Réponse de jeedom :  {}'.format(response))
@@ -73,32 +76,52 @@ class JeedomCallback:
             return False
         return True
 
-    def event_handler(self, eventobj):
-        logging.debug("Event : {}".format(eventobj.event_type))
-        if eventobj.event_type == MerossEventType.DEVICE_SWITCH_STATUS:
-            self.send({'action': 'switch', 'uuid':eventobj.device.uuid, 'channel':eventobj.channel_id, 'status':int(eventobj.switch_state)})
-        elif eventobj.event_type == MerossEventType.DEVICE_ONLINE_STATUS:
-            self.send({'action': 'online', 'uuid':eventobj.device.uuid, 'status':eventobj.status})
-        elif eventobj.event_type == MerossEventType.DEVICE_BULB_SWITCH_STATE:
-            self.send({'action': 'switch', 'uuid':eventobj.device.uuid, 'channel':eventobj.channel, 'status':int(eventobj.is_on)})
-        elif eventobj.event_type == MerossEventType.DEVICE_BULB_STATE:
-            self.send({'action': 'bulb', 'uuid':eventobj.device.uuid, 'channel':eventobj.channel, 'status':eventobj.light_state})
-        elif eventobj.event_type == MerossEventType.GARAGE_DOOR_STATUS:
-            self.send({'action': 'door', 'uuid':eventobj.device.uuid, 'channel':eventobj.channel, 'status':eventobj.door_state})
-        #HUMIDIFIER
-        elif eventobj.event_type == MerossEventType.HUMIDIFIER_LIGHT_EVENT:
-            self.send({'action': 'hlight', 'uuid':eventobj.device.uuid, 'channel':eventobj.channel, 'status':int(eventobj.is_on), 'rgb':int(to_rgb(eventobj.rgb)), 'luminance':eventobj.luminance})
-        elif eventobj.event_type == MerossEventType.HUMIDIFIER_SPRY_EVENT:
-            self.send({'action': 'hspray', 'uuid':eventobj.device.uuid, 'channel':eventobj.channel, 'status':int(eventobj.spry_mode.value)})
-        #ADDITIONS
-        elif eventobj.event_type == MerossEventType.CLIENT_CONNECTION:
-            self.send({'action': 'connect', 'status':eventobj.status.value})
-        elif eventobj.event_type == MerossEventType.DEVICE_BIND:
-            self.send({'action': 'bind', 'uuid':eventobj.device.uuid, 'data':eventobj.bind_data})
-        elif eventobj.event_type == MerossEventType.DEVICE_UNBIND:
-            self.send({'action': 'unbind', 'uuid':eventobj.device.uuid})        
-        #elif eventobj.event_type == MerossEventType.THERMOSTAT_MODE_CHANGE:
-        #elif eventobj.event_type == MerossEventType.THERMOSTAT_TEMPERATURE_CHANGE:
+    # def event_handler(self, eventobj):
+    async def event_handler(self, push: GenericPushNotification, devices: List[BaseDevice],
+                            meross_manager):
+        logging.debug("Event : {}".format(push.namespace))
+        if push.namespace == Namespace.CONTROL_TOGGLEX:
+            for index, device in devices:
+                self.send(
+                    {'action': 'switch', 'uuid': device.uuid,
+                     'channel': push.raw_data['togglex'][index].channel,
+                     'status': int(push.raw_data['togglex'][index].onoff)})
+
+        elif push.namespace == Namespace.SYSTEM_ONLINE:
+            for index, device in devices:
+                self.send({'action': 'online', 'uuid': device.uuid,
+                           'status': push.raw_data['online'][index].status})
+
+        # Not sure...
+        elif push.namespace == Namespace.GARAGE_DOOR_STATE:
+            for index, device in devices:
+                self.send({'action': 'door', 'uuid': device.uuid,
+                           'channel': push.raw_data['door'][index].channel,
+                           'status': push.raw_data['door'][index].door_state})
+
+        elif push.namespace == Namespace.CONTROL_BIND:
+            for index, device in devices:
+                self.send(
+                    {'action': 'bind', 'uuid': device.uuid, 'data': push.raw_data['bind'][index]})
+
+        elif push.namespace == Namespace.CONTROL_UNBIND:
+            for device in devices:
+                self.send({'action': 'unbind', 'uuid': device.uuid})
+
+        # TODO
+        # HUMIDIFIER
+        # elif eventobj.event_type == MerossEventType.HUMIDIFIER_LIGHT_EVENT:
+        #     self.send(
+        #         {'action': 'hlight', 'uuid': eventobj.device.uuid, 'channel': eventobj.channel,
+        #          'status': int(eventobj.is_on), 'rgb': int(to_rgb(eventobj.rgb)),
+        #          'luminance': eventobj.luminance})
+        # elif eventobj.event_type == MerossEventType.HUMIDIFIER_SPRY_EVENT:
+        #     self.send(
+        #         {'action': 'hspray', 'uuid': eventobj.device.uuid, 'channel': eventobj.channel,
+        #          'status': int(eventobj.spry_mode.value)})
+        # elif eventobj.event_type == MerossEventType.CLIENT_CONNECTION:
+        #    self.send({'action': 'connect', 'status': eventobj.status.value})
+
 
 # Reception de Jeedom ----------------------------------------------------------
 class JeedomHandler(socketserver.BaseRequestHandler):
@@ -118,231 +141,202 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         args = message.get('args')
         if hasattr(self, action):
             func = getattr(self, action)
-            response['result'] = func
+            response['result'] = asyncio.run(func)
             if callable(response['result']):
                 response['result'] = response['result'](*args)
         logging.debug(response)
         self.request.sendall(json.dumps(response).encode())
 
-    def setOn(self, uuid, channel=0):
-        device = mm.get_device_by_uuid(uuid)
+    async def setOn(self, uuid, channel=0):
+        device = meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
-            if str(device.__class__.__name__) == 'GenericGarageDoorOpener':
-                res = device.close_door(channel=int(channel))
-            elif str(device.__class__.__name__) == 'GenericHumidifier':
-                res = device.turn_on_light()
+            if device.abilities[Namespace.GARAGE_DOOR_STATE]:
+                await device.async_close(channel=int(channel))
             else:
-                res = device.turn_on_channel(int(channel))
-            return res
+                await device.async_turn_on(channel=int(channel))
+            return ''
         else:
             return 'Unknow device'
 
-    def setOff(self, uuid, channel=0):
-        device = mm.get_device_by_uuid(uuid)
+    async def setOff(self, uuid, channel=0):
+        device = meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
-            if str(device.__class__.__name__) == 'GenericGarageDoorOpener':
-                res = device.open_door(channel=int(channel))
-            elif str(device.__class__.__name__) == 'GenericHumidifier':
-                res = device.turn_off_light()
+            if device.abilities[Namespace.GARAGE_DOOR_STATE]:
+                await device.async_open(channel=int(channel))
             else:
-                res = device.turn_off_channel(int(channel))
-            return res
+                await device.async_turn_off(channel=int(channel))
+            return
         else:
             return 'Unknow device'
 
-    def setLumi(self, uuid, lumi_int):
-        device = mm.get_device_by_uuid(uuid)
+    async def setLumi(self, uuid, lumi_int):
+        device = meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
-            if str(device.__class__.__name__) == 'GenericHumidifier':
-                res = device.configure_light(onoff=1, luminance=lumi_int)
-            else:
-                res = device.set_light_color(luminance=lumi_int)
-            return res
+            await device.async_set_light_color(luminance=int(lumi_int))
+            return
         else:
             return 'Unknow device'
 
-    def setTemp(self, uuid, temp_int, lumi=-1):
-        device = mm.get_device_by_uuid(uuid)
+    async def setTemp(self, uuid, temp_int, lumi=-1):
+        device = meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
-            res = device.set_light_color(temperature=temp_int, luminance=lumi)
-            return res
+            await device.async_set_light_color(temperature=temp_int, luminance=lumi)
+            return
         else:
             return 'Unknow device'
 
-    def setRGB(self, uuid, rgb_int, lumi=-1):
-        device = mm.get_device_by_uuid(uuid)
+    async def setRGB(self, uuid, rgb_int, lumi=-1):
+        device = meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
-            if str(device.__class__.__name__) == 'GenericHumidifier':
-                res = device.configure_light(onoff=1, rgb=int(rgb_int), luminance=lumi)
-            else:
-                res = device.set_light_color(rgb=int(rgb_int), luminance=lumi)
-            return res
+            await device.async_set_light_color(rgb=int(rgb_int), luminance=lumi)
+            return
         else:
             return 'Unknow device'
 
-    def setSpray(self, uuid, smode=0):
-        device = mm.get_device_by_uuid(uuid)
-        if device is not None:
-            if smode == '1':
-                res = device.set_spray_mode(spray_mode=SprayMode.CONTINUOUS)
-            elif smode == '2':
-                res = device.set_spray_mode(spray_mode=SprayMode.INTERMITTENT)
-            else:
-                res = device.set_spray_mode(spray_mode=SprayMode.OFF)
-            return res
-        else:
-            return 'Unknow device'
+    async def setSpray(self, uuid, smode=0):
+        # device = meross_manager.get_device_by_uuid(uuid)
+        # if device is not None:
+        #     if smode == '1':
+        #         res = device.set_spray_mode(spray_mode=SprayMode.CONTINUOUS)
+        #     elif smode == '2':
+        #         res = device.set_spray_mode(spray_mode=SprayMode.INTERMITTENT)
+        #     else:
+        #         res = device.set_spray_mode(spray_mode=SprayMode.OFF)
+        #     return res
+        # else:
+        #     return 'Unknow device'
+        return 'Not Implemented Yet'
 
-    def syncOneMeross(self, device):
+    async def syncOneMeross(self, device):
         d = dict({
             'name': device.name,
             'uuid': device.uuid,
             'famille': str(device.__class__.__name__),
-            'online': device.online,
+            'online': device.online_status == OnlineStatus.ONLINE,
             'type': device.type,
             'ip': '',
             'mac': ''
         })
         # Hors ligne : fin
-        if not device.online:
+        if device.online_status != OnlineStatus.ONLINE:
             return d
         # En Ligne Seulement
-        data = device.get_sys_data()
+        data = device.abilities
         d['values'] = {}
         # Nom Canaux
         onoff = [device.name]
         for x in device._channels:
             try:
-                onoff.append(x['devName'])
+                onoff.append(x['name'])
             except:
                 pass
         d['onoff'] = onoff
         # Valeur Canaux
         switch = []
         try:
-            switch = [data['all']['control']['toggle']['onoff']]
+            for x in device._channels:
+                switch.append(device.is_on(channel=x.index))
         except:
             try:
-                digest = data['all']['digest']['togglex']
-                switch = [x['onoff'] for x in digest]
+                for x in device._channels:
+                    switch.append(device.get_light_is_on(channel=x.index))
             except:
-                try:
-                    switch = [device.get_light_state()['onoff']]
-                except:
-                    pass
+                pass
         d['values']['switch'] = switch
         # IP
-        try:
-            d['ip'] = data['all']['system']['firmware']['innerIp']
-        except:
-            pass
+        # try:
+        #    d['ip'] = data['all']['system']['firmware']['innerIp']
+        # except:
+        #    pass
         # MAC
-        try:
-            d['mac'] = data['all']['system']['hardware']['macAddress']
-        except:
-            pass
+        # try:
+        #    d['mac'] = data['all']['system']['hardware']['macAddress']
+        # except:
+        #    pass
         # Puissance
-        if device.supports_electricity_reading():
+        if data[Namespace.CONTROL_ELECTRICITY]:
             d['elec'] = True
-            electricity = device.get_electricity()
-            d['values']['power'] = float(electricity['power'] / 1000.)
-            d['values']['current'] = float(electricity['current'] / 1000.)
-            d['values']['voltage'] = float(electricity['voltage'] / 10.)
+            electricity = await device.async_get_instant_metrics()
+            d['values']['power'] = electricity.power
+            d['values']['current'] = electricity.current
+            d['values']['voltage'] = electricity.voltage
         else:
             d['elec'] = False
         # Consommation
-        if device.supports_consumption_reading():
+        if data[Namespace.CONTROL_CONSUMPTIONX] or data[Namespace.CONTROL_CONSUMPTION]:
             d['conso'] = True
-            try:
-                l_conso = device.get_power_consumption()
-            except:
-                l_conso = []
-            # Recup
-            if len(l_conso) > 0:
-                d['values']['conso_totale'] = 0
-                today = datetime.today().strftime("%Y-%m-%d")
-                for c in l_conso:
-                    if c['date'] == today:
-                        try:
-                            d['values']['conso_totale'] = float(c['value'] / 1000.)
-                        except:
-                            pass
+            l_conso = await device.async_get_daily_power_consumption()
+            d['values']['conso_totale'] = 0
+            today = datetime.today().strftime("%Y-%m-%d")
+            for c in l_conso:
+                dateconso = c['date'].strftime("%Y-%m-%d")
+                if dateconso == today:
+                    d['values']['conso_totale'] = c['value']
         else:
             d['conso'] = False
         # Lumiere
-        if device.supports_light_control():
+        if data[Namespace.CONTROL_LIGHT]:
             d['light'] = True
-            digest = data['all']['digest']['light']
-            d['lumin'] = device.supports_mode(MODE_LUMINANCE)
-            d['tempe'] = device.supports_mode(MODE_TEMPERATURE)
-            d['isrgb'] = device.supports_mode(MODE_RGB)
+            d['lumin'] = device.get_supports_luminance()
+            d['tempe'] = device.get_supports_temperature()
+            d['isrgb'] = device.get_supports_rgb()
             if d['lumin']:
-                d['values']['lumival'] = digest['luminance']
+                d['values']['lumival'] = device.get_luminance()
             if d['tempe']:
-                d['values']['tempval'] = digest['temperature']
+                d['values']['tempval'] = device.get_color_temperature()
             if d['isrgb']:
-                d['values']['rgbval'] = digest['rgb']
-            d['values']['capacity'] = digest['capacity']
+                d['values']['rgbval'] = device.get_rgb_color()
         else:
             d['light'] = False
             d['lumin'] = False
             d['tempe'] = False
             d['isrgb'] = False
         # HUMIDIFIER
-        if d['famille'] == "GenericHumidifier":
+        if data[Namespace.CONTROL_SPRAY]:
             d['spray'] = True
-            d['values']['spray'] = device.get_spray_mode().value
+            # d['values']['spray'] = device.get_spray_mode().value
         else:
             d['spray'] = False
         # Fini
         return d
 
-    def getMerossConso(self, device):
-        d = dict({
-            'conso_totale': 0
-        })
+    async def getMerossConso(self, device):
+        d = dict({'conso_totale': 0})
         try:
-            l_conso = device.get_power_consumption()
-        except:
-            l_conso = []
-        # Recup
-        if len(l_conso) > 0:
+            l_conso = await device.async_get_daily_power_consumption()
             today = datetime.today().strftime("%Y-%m-%d")
             for c in l_conso:
-                if c['date'] == today:
-                    try:
-                        d['conso_totale'] = float(c['value'] / 1000.)
-                    except:
-                        pass
-        return d
+                dateconso = c['date'].strftime("%Y-%m-%d")
+                if dateconso == today:
+                    d['conso_totale'] = c['value']
+        finally:
+            return d
 
     def syncMeross(self):
         d_devices = {}
-        devices = mm.get_supported_devices()
+        devices = meross_manager.find_devices()
         for num in range(len(devices)):
             device = devices[num]
-            d = self.syncOneMeross(device)
+            d = asyncio.run(self.syncOneMeross(device))
             uuid = device.uuid
             d_devices[uuid] = d
         return d_devices
 
     def syncDevice(self, uuid):
-        d_device = {}
-        device = mm.get_device_by_uuid(uuid)
-        d = self.syncOneMeross(device)
-        d_device = d
-        return d_device
+        device = meross_manager.find_devices(device_uuids=uuid)[0]
+        return asyncio.run(self.syncOneMeross(device))
 
     def syncMerossConso(self):
         d_devices = {}
-        devices = mm.get_supported_devices()
+        devices = meross_manager.find_devices(device_class=ConsumptionXMixin,
+                                              online_status=OnlineStatus.ONLINE)
         for num in range(len(devices)):
             device = devices[num]
-            if device.online and device.supports_consumption_reading():
-                d = self.getMerossConso(device)
-                uuid = device.uuid
-                d_devices[uuid] = d
+            d = asyncio.run(self.getMerossConso(device))
+            uuid = device.uuid
+            d_devices[uuid] = d
         return d_devices
+
 
 # Les fonctions du daemon ------------------------------------------------------
 def convert_log_level(level='error'):
@@ -355,14 +349,18 @@ def convert_log_level(level='error'):
               'none': logging.NOTSET}
     return LEVELS.get(level, logging.NOTSET)
 
+
 def handler(signum=None, frame=None):
     logging.debug("Signal %i caught, exiting..." % int(signum))
-    shutdown()
+    asyncio.run(shutdown())
 
-def shutdown():
+
+async def shutdown():
     logging.debug("Arrêt")
     logging.debug("Arrêt Meross Manager")
-    mm.stop()
+    meross_manager.unregister_push_notification_handler_coroutine()
+    meross_manager.close()
+    await http_api_client.async_logout()
     logging.debug("Stop callback server")
     jc.stop()
     logging.debug("Arrêt du démon local")
@@ -376,45 +374,49 @@ def shutdown():
         os.remove(_sockfile)
     logging.debug("Exit 0")
 
+
 # ----------------------------------------------------------------------------
-def syncOneElectricity(device):
-    # Puissance
-    if device.supports_electricity_reading():
-        try:
-            d = dict({'power': 0,'current': 0,'voltage':0})
-            electricity = device.get_electricity()
-            d['power'] = float(electricity['power'] / 1000.)
-            d['current'] = float(electricity['current'] / 1000.)
-            d['voltage'] = float(electricity['voltage'] / 10.)
-            return d
-        except:
-            pass
-    # Fini
-    return False
+async def syncOneElectricity(device):
+    try:
+        electricity = await device.async_get_instant_metrics()
+        d = dict({'power': 0, 'current': 0, 'voltage': 0})
+        d['power'] = electricity.power
+        d['voltage'] = electricity.voltage
+        d['current'] = electricity.current
+        return d
+    except:
+        pass
+    finally:
+        return False
+
 
 def UpdateAllElectricity(interval):
     stopped = threading.Event()
+
     def loop():
         while not stopped.wait(interval):
             e_devices = {}
             try:
-                devices = mm.get_supported_devices()
+                # Que les appareils ayant l'info electrique
+                devices = meross_manager.find_devices(device_class=ElectricityMixin,
+                                                      online_status=OnlineStatus.ONLINE)
                 for num in range(len(devices)):
                     device = devices[num]
-                    if device.online:
-                        d = syncOneElectricity(device)
-                        if isinstance(d, dict):
-                            uuid = device.uuid
-                            e_devices[uuid] = d
+                    d = asyncio.run(syncOneElectricity(device))
+                    if isinstance(d, dict):
+                        uuid = device.uuid
+                        e_devices[uuid] = d
                 # Fin du for
                 logging.info('Send Electricity')
-                #jc.sendElectricity(e_devices)
-                jc.send({'action': 'electricity', 'values':e_devices})
+                # jc.sendElectricity(e_devices)
+                jc.send({'action': 'electricity', 'values': e_devices})
             except:
                 pass
+
     # fin de loop
     threading.Thread(target=loop).start()
     return stopped.set
+
 
 # ----------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
@@ -429,7 +431,8 @@ parser.add_argument('--socket', help='Daemon socket', default='/tmp/MerossIOTd.s
 args = parser.parse_args()
 
 FORMAT = '[%(asctime)-15s][%(levelname)s][%(name)s](%(threadName)s) : %(message)s'
-logging.basicConfig(level=convert_log_level(args.loglevel), format=FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
+logging.basicConfig(level=convert_log_level(args.loglevel), format=FORMAT,
+                    datefmt="%Y-%m-%d %H:%M:%S")
 urllib3_logger = logging.getLogger('urllib3')
 urllib3_logger.setLevel(logging.CRITICAL)
 
@@ -464,10 +467,14 @@ if os.path.exists(args.socket):
 server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
 # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-mm = MerossManager.from_email_and_password(args.muser, args.mpswd)
+http_api_client: MerossHttpClient = asyncio.run(MerossHttpClient.async_from_user_password(
+    email=args.muser,
+    password=args.mpswd))
+meross_manager: MerossManager = MerossManager(http_client=http_api_client)
 # Register event handlers for the manager...
-mm.register_event_handler(jc.event_handler)
-mm.start()
+meross_manager.register_push_notification_handler_coroutine(jc.event_handler)
+asyncio.run(meross_manager.async_init())
+asyncio.run(meross_manager.async_device_discovery())
 # Thread for JeedomHandler
 t = threading.Thread(target=server.serve_forever)
 t.start()
