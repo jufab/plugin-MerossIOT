@@ -418,6 +418,18 @@ def UpdateAllElectricity(interval):
     return stopped.set
 
 
+async def main(user, pswd):
+    # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
+    http_api_client: MerossHttpClient = await MerossHttpClient.async_from_user_password(
+        email=user,
+        password=pswd)
+    meross_manager: MerossManager = MerossManager(http_client=http_api_client)
+    # Register event handlers for the manager...
+    meross_manager.register_push_notification_handler_coroutine(jc.event_handler)
+    await meross_manager.async_init()
+    await meross_manager.async_device_discovery()
+
+
 # ----------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument('--muser', help='Compte Meross', default='')
@@ -467,14 +479,11 @@ if os.path.exists(args.socket):
 server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
 # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-http_api_client: MerossHttpClient = asyncio.run(MerossHttpClient.async_from_user_password(
-    email=args.muser,
-    password=args.mpswd))
-meross_manager: MerossManager = MerossManager(http_client=http_api_client)
-# Register event handlers for the manager...
-meross_manager.register_push_notification_handler_coroutine(jc.event_handler)
-asyncio.run(meross_manager.async_init())
-asyncio.run(meross_manager.async_device_discovery())
+http_api_client: MerossHttpClient
+meross_manager: MerossManager
+
+asyncio.run(main(args.muser, args.mpswd))
+
 # Thread for JeedomHandler
 t = threading.Thread(target=server.serve_forever)
 t.start()
