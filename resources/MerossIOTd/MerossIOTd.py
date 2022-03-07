@@ -19,10 +19,10 @@ from meross_iot.controller.mixins.electricity import ElectricityMixin
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
 from meross_iot.model.enums import OnlineStatus, Namespace
-# Envoi vers Jeedom ------------------------------------------------------------
 from meross_iot.model.push.generic import GenericPushNotification
 
 
+# Envoi vers Jeedom ------------------------------------------------------------
 class JeedomCallback:
     def __init__(self, apikey, url):
         self.apikey = apikey
@@ -141,7 +141,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         args = message.get('args')
         if hasattr(self, action):
             func = getattr(self, action)
-            response['result'] = asyncio.run(func)
+            response['result'] = func
             if callable(response['result']):
                 response['result'] = response['result'](*args)
         logging.debug(response)
@@ -358,7 +358,7 @@ def handler(signum=None, frame=None):
 async def shutdown():
     logging.debug("Arrêt")
     logging.debug("Arrêt Meross Manager")
-    meross_manager.unregister_push_notification_handler_coroutine()
+    meross_manager.unregister_push_notification_handler_coroutine(jc.event_handler)
     meross_manager.close()
     await http_api_client.async_logout()
     logging.debug("Stop callback server")
@@ -428,6 +428,7 @@ async def main(user, pswd):
     meross_manager.register_push_notification_handler_coroutine(jc.event_handler)
     await meross_manager.async_init()
     await meross_manager.async_device_discovery()
+    return http_api_client, meross_manager
 
 
 # ----------------------------------------------------------------------------
@@ -479,10 +480,9 @@ if os.path.exists(args.socket):
 server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
 # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-http_api_client: MerossHttpClient
-meross_manager: MerossManager
-
-asyncio.run(main(args.muser, args.mpswd))
+http_api_client, meross_manager = asyncio.run(main(args.muser, args.mpswd), debug=True)
+logging.info('HttpApiClient : {}'.format(http_api_client))
+logging.info('MerossManager : {}'.format(meross_manager))
 
 # Thread for JeedomHandler
 t = threading.Thread(target=server.serve_forever)
