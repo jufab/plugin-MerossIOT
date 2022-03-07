@@ -316,8 +316,9 @@ class JeedomHandler(socketserver.BaseRequestHandler):
     def syncMeross(self):
         d_devices = {}
         logging.info("Début de synchro global")
+        logging.info('[loop-Elec] is meross_manager OK : {}'.format(_meross_manager is not None))
         devices = _meross_manager.find_devices()
-        logging.debug("liste des devices : {}".format(devices))
+        logging.info("liste des devices : {}".format(devices))
         for num in range(len(devices)):
             device = devices[num]
             d = asyncio.run(self.syncOneMeross(device))
@@ -403,10 +404,10 @@ def UpdateAllElectricity(interval):
         while not stopped.wait(interval):
             e_devices = {}
             try:
+                logging.info('[loop-Elec] is meross_manager OK : {}'.format(_meross_manager is not None))
                 # Que les appareils ayant l'info electrique
                 devices = _meross_manager.find_devices(device_class=ElectricityMixin,
                                                        online_status=OnlineStatus.ONLINE)
-                logging.debug("devices sur updateElect : {}".format(devices))
                 for num in range(len(devices)):
                     device = devices[num]
                     d = asyncio.run(syncOneElectricity(device))
@@ -491,9 +492,8 @@ _http_api_client, _meross_manager = asyncio.run(
 meross_root_logger = logging.getLogger("meross_iot")
 meross_root_logger.setLevel(convert_log_level(args.loglevel))
 
-logging.info('isMeross_manager OK : {}'.format(_meross_manager is not None))
-logging.info('HttpApiClient : {}'.format(_http_api_client))
-logging.info('MerossManager : {}'.format(_meross_manager))
+logging.info('is meross_manager OK : {}'.format(_meross_manager is not None))
+
 
 # Thread for JeedomHandler
 t = threading.Thread(target=server.serve_forever)
