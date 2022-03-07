@@ -223,7 +223,9 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             return d
         # En Ligne Seulement
         data = device.abilities
+        logging.info("[syncOneMeross] Data : {}".format(data))
         d['values'] = {}
+
         # Nom Canaux
         onoff = [device.name]
         for x in device._channels:
@@ -232,6 +234,8 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             except:
                 pass
         d['onoff'] = onoff
+
+        logging.info("[syncOneMeross] d après onoff: {}".format(d))
         # Valeur Canaux
         switch = []
         try:
