@@ -486,11 +486,12 @@ server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
 
 _http_api_client, _meross_manager = asyncio.run(
-    meross_connection(email=args.muser, password=args.mpswd))
+    meross_connection(email=args.muser, password=args.mpswd), debug=True)
 
 meross_root_logger = logging.getLogger("meross_iot")
 meross_root_logger.setLevel(convert_log_level(args.loglevel))
 
+logging.info('isMeross_manager OK : {}'.format(_meross_manager is not None))
 logging.info('HttpApiClient : {}'.format(_http_api_client))
 logging.info('MerossManager : {}'.format(_meross_manager))
 
