@@ -141,7 +141,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         args = message.get('args')
         if hasattr(self, action):
             func = getattr(self, action)
-            response['result'] = func
+            response['result'] = asyncio.run(func)
             if callable(response['result']):
                 response['result'] = response['result'](*args)
         logging.info(response)
@@ -339,13 +339,13 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         device = _meross_manager.find_devices(device_uuids=uuid)[0]
         return await self.syncOneMeross(device)
 
-    def syncMerossConso(self):
+    async def syncMerossConso(self):
         d_devices = {}
         devices = _meross_manager.find_devices(device_class=ConsumptionXMixin,
                                                online_status=OnlineStatus.ONLINE)
         for num in range(len(devices)):
             device = devices[num]
-            d = asyncio.run(self.getMerossConso(device))
+            d = await self.getMerossConso(device)
             uuid = device.uuid
             d_devices[uuid] = d
         return d_devices
