@@ -496,6 +496,8 @@ if os.path.exists(args.socket):
 server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
 
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 _http_api_client, _meross_manager = asyncio.run(
     meross_connection(email=args.muser, password=args.mpswd), debug=True)
 
