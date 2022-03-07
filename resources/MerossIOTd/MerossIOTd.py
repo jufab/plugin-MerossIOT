@@ -208,6 +208,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         return 'Not Implemented Yet'
 
     async def syncOneMeross(self, device):
+        await device.async_update()
         d = dict({
             'name': device.name,
             'uuid': device.uuid,
@@ -420,7 +421,7 @@ def UpdateAllElectricity(interval):
 
 async def main(user, pswd):
     # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-    http_api_client: MerossHttpClient = await MerossHttpClient.async_from_user_password(
+    http_api_client = await MerossHttpClient.async_from_user_password(
         email=user,
         password=pswd)
     meross_manager: MerossManager = MerossManager(http_client=http_api_client)
@@ -428,7 +429,6 @@ async def main(user, pswd):
     meross_manager.register_push_notification_handler_coroutine(jc.event_handler)
     await meross_manager.async_init()
     await meross_manager.async_device_discovery()
-    return http_api_client, meross_manager
 
 
 # ----------------------------------------------------------------------------
@@ -480,7 +480,11 @@ if os.path.exists(args.socket):
 server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
 # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-http_api_client, meross_manager = asyncio.run(main(args.muser, args.mpswd), debug=True)
+http_api_client: MerossHttpClient
+meross_manager: MerossManager
+
+asyncio.run(main(args.muser, args.mpswd))
+
 logging.info('HttpApiClient : {}'.format(http_api_client))
 logging.info('MerossManager : {}'.format(meross_manager))
 
