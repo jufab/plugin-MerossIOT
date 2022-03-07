@@ -322,7 +322,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         finally:
             return d
 
-    def syncMeross(self):
+    async def syncMeross(self):
         d_devices = {}
         logging.info("Début de synchro global")
         logging.debug('[loop-Elec] is meross_manager OK : {}'.format(_meross_manager is not None))
@@ -330,14 +330,14 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         logging.debug("liste des devices : {}".format(devices))
         for device in devices:
             logging.debug("device : {}".format(device))
-            d = asyncio.run(self.syncOneMeross(device))
+            d = await self.syncOneMeross(device)
             uuid = device.uuid
             d_devices[uuid] = d
         return d_devices
 
-    def syncDevice(self, uuid):
+    async def syncDevice(self, uuid):
         device = _meross_manager.find_devices(device_uuids=uuid)[0]
-        return asyncio.run(self.syncOneMeross(device))
+        return await self.syncOneMeross(device)
 
     def syncMerossConso(self):
         d_devices = {}
