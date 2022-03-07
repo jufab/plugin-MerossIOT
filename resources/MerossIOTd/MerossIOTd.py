@@ -315,7 +315,9 @@ class JeedomHandler(socketserver.BaseRequestHandler):
 
     def syncMeross(self):
         d_devices = {}
+        logging.info("Début de synchro global")
         devices = meross_manager.find_devices()
+        logging.debug("liste des devices : {}".format(devices))
         for num in range(len(devices)):
             device = devices[num]
             d = asyncio.run(self.syncOneMeross(device))
