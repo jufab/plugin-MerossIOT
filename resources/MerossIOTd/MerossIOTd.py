@@ -316,7 +316,6 @@ class JeedomHandler(socketserver.BaseRequestHandler):
     def syncMeross(self):
         d_devices = {}
         logging.info("Début de synchro global")
-        logging.debug("meross_manager? : {}".format(_meross_manager))
         devices = _meross_manager.find_devices()
         logging.debug("liste des devices : {}".format(devices))
         for num in range(len(devices)):
@@ -407,6 +406,7 @@ def UpdateAllElectricity(interval):
                 # Que les appareils ayant l'info electrique
                 devices = _meross_manager.find_devices(device_class=ElectricityMixin,
                                                        online_status=OnlineStatus.ONLINE)
+                logging.debug("devices sur updateElect : {}".format(devices))
                 for num in range(len(devices)):
                     device = devices[num]
                     d = asyncio.run(syncOneElectricity(device))
