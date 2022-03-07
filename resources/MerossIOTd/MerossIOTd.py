@@ -431,9 +431,9 @@ async def meross_connection(email, password):
         email=email,
         password=password)
     mm: MerossManager = MerossManager(http_client=http)
+    await mm.async_device_discovery()
     # Register event handlers for the manager...
     mm.register_push_notification_handler_coroutine(jc.event_handler)
-    await mm.async_device_discovery()
     return http, mm
 
 
@@ -452,6 +452,7 @@ args = parser.parse_args()
 FORMAT = '[%(asctime)-15s][%(levelname)s][%(name)s](%(threadName)s) : %(message)s'
 logging.basicConfig(level=convert_log_level(args.loglevel), format=FORMAT,
                     datefmt="%Y-%m-%d %H:%M:%S")
+logging.getLogger().setLevel(convert_log_level(args.loglevel))
 urllib3_logger = logging.getLogger('urllib3')
 urllib3_logger.setLevel(logging.CRITICAL)
 
