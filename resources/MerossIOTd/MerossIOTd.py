@@ -486,6 +486,9 @@ logging.info('Démarrage Meross Manager')
 
 http_api_client, meross_manager = asyncio.run(main(email=args.muser, password=args.mpswd))
 
+meross_root_logger = logging.getLogger("meross_iot")
+meross_root_logger.setLevel(convert_log_level(args.loglevel))
+
 logging.info('HttpApiClient : {}'.format(http_api_client))
 logging.info('MerossManager : {}'.format(meross_manager))
 
