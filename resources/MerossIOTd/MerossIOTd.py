@@ -210,7 +210,8 @@ class JeedomHandler(socketserver.BaseRequestHandler):
     async def syncOneMeross(self, device):
         try:
             await device.async_update()
-        except:
+        except BaseException as ex:
+            logging.error("Erreur lors de l'async : {}".format(ex))
             pass
         logging.info("[syncOneMeross] DEvice : {}".format(device))
         d = dict({
