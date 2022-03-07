@@ -148,7 +148,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         self.request.sendall(json.dumps(response).encode())
 
     async def setOn(self, uuid, channel=0):
-        device = meross_manager.find_devices(device_uuids=uuid)[0]
+        device = _meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
             if device.abilities[Namespace.GARAGE_DOOR_STATE]:
                 await device.async_close(channel=int(channel))
@@ -159,7 +159,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             return 'Unknow device'
 
     async def setOff(self, uuid, channel=0):
-        device = meross_manager.find_devices(device_uuids=uuid)[0]
+        device = _meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
             if device.abilities[Namespace.GARAGE_DOOR_STATE]:
                 await device.async_open(channel=int(channel))
@@ -170,7 +170,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             return 'Unknow device'
 
     async def setLumi(self, uuid, lumi_int):
-        device = meross_manager.find_devices(device_uuids=uuid)[0]
+        device = _meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
             await device.async_set_light_color(luminance=int(lumi_int))
             return
@@ -178,7 +178,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             return 'Unknow device'
 
     async def setTemp(self, uuid, temp_int, lumi=-1):
-        device = meross_manager.find_devices(device_uuids=uuid)[0]
+        device = _meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
             await device.async_set_light_color(temperature=temp_int, luminance=lumi)
             return
@@ -186,7 +186,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             return 'Unknow device'
 
     async def setRGB(self, uuid, rgb_int, lumi=-1):
-        device = meross_manager.find_devices(device_uuids=uuid)[0]
+        device = _meross_manager.find_devices(device_uuids=uuid)[0]
         if device is not None:
             await device.async_set_light_color(rgb=int(rgb_int), luminance=lumi)
             return
@@ -316,7 +316,8 @@ class JeedomHandler(socketserver.BaseRequestHandler):
     def syncMeross(self):
         d_devices = {}
         logging.info("Début de synchro global")
-        devices = meross_manager.find_devices()
+        logging.debug("meross_manager? : {}".format(_meross_manager))
+        devices = _meross_manager.find_devices()
         logging.debug("liste des devices : {}".format(devices))
         for num in range(len(devices)):
             device = devices[num]
@@ -326,13 +327,13 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         return d_devices
 
     def syncDevice(self, uuid):
-        device = meross_manager.find_devices(device_uuids=uuid)[0]
+        device = _meross_manager.find_devices(device_uuids=uuid)[0]
         return asyncio.run(self.syncOneMeross(device))
 
     def syncMerossConso(self):
         d_devices = {}
-        devices = meross_manager.find_devices(device_class=ConsumptionXMixin,
-                                              online_status=OnlineStatus.ONLINE)
+        devices = _meross_manager.find_devices(device_class=ConsumptionXMixin,
+                                               online_status=OnlineStatus.ONLINE)
         for num in range(len(devices)):
             device = devices[num]
             d = asyncio.run(self.getMerossConso(device))
@@ -362,10 +363,10 @@ def shutdown():
     logging.debug("Arrêt")
     logging.debug("Arrêt Meross Manager")
     updateElec()
-    meross_manager.unregister_push_notification_handler_coroutine(jc.event_handler)
-    meross_manager.close()
+    _meross_manager.unregister_push_notification_handler_coroutine(jc.event_handler)
+    _meross_manager.close()
     try:
-        asyncio.run(http_api_client.async_logout())
+        asyncio.run(_http_api_client.async_logout())
     except:
         pass
     logging.debug("Stop callback server")
@@ -379,7 +380,6 @@ def shutdown():
     if os.path.exists(_sockfile):
         os.remove(_sockfile)
     logging.debug("Exit 0")
-
 
 
 # ----------------------------------------------------------------------------
@@ -405,8 +405,8 @@ def UpdateAllElectricity(interval):
             e_devices = {}
             try:
                 # Que les appareils ayant l'info electrique
-                devices = meross_manager.find_devices(device_class=ElectricityMixin,
-                                                      online_status=OnlineStatus.ONLINE)
+                devices = _meross_manager.find_devices(device_class=ElectricityMixin,
+                                                       online_status=OnlineStatus.ONLINE)
                 for num in range(len(devices)):
                     device = devices[num]
                     d = asyncio.run(syncOneElectricity(device))
@@ -425,12 +425,11 @@ def UpdateAllElectricity(interval):
     return stopped.set
 
 
-async def main(email, password):
-    # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-    http = await MerossHttpClient.async_from_user_password(
+async def meross_connection(email, password):
+    http: MerossHttpClient = await MerossHttpClient.async_from_user_password(
         email=email,
         password=password)
-    mm = MerossManager(http_client=http)
+    mm: MerossManager = MerossManager(http_client=http)
     # Register event handlers for the manager...
     mm.register_push_notification_handler_coroutine(jc.event_handler)
     await mm.async_device_discovery()
@@ -486,13 +485,14 @@ if os.path.exists(args.socket):
 server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
 
-http_api_client, meross_manager = asyncio.run(main(email=args.muser, password=args.mpswd))
+_http_api_client, _meross_manager = asyncio.run(
+    meross_connection(email=args.muser, password=args.mpswd))
 
 meross_root_logger = logging.getLogger("meross_iot")
 meross_root_logger.setLevel(convert_log_level(args.loglevel))
 
-logging.info('HttpApiClient : {}'.format(http_api_client))
-logging.info('MerossManager : {}'.format(meross_manager))
+logging.info('HttpApiClient : {}'.format(_http_api_client))
+logging.info('MerossManager : {}'.format(_meross_manager))
 
 # Thread for JeedomHandler
 t = threading.Thread(target=server.serve_forever)
