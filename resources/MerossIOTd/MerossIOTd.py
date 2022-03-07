@@ -128,11 +128,11 @@ class JeedomHandler(socketserver.BaseRequestHandler):
     def handle(self):
         # self.request is the TCP socket connected to the client
         data = self.request.recv(1024)
-        logging.debug("Message received in socket")
+        logging.info("Message received in socket")
         message = json.loads(data.decode())
         lmessage = dict(message)
         del lmessage['apikey']
-        logging.debug(lmessage)
+        logging.info(lmessage)
         if message.get('apikey') != _apikey:
             logging.error("Invalid apikey from socket : {}".format(data))
             return
@@ -144,7 +144,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             response['result'] = func
             if callable(response['result']):
                 response['result'] = response['result'](*args)
-        logging.debug(response)
+        logging.info(response)
         self.request.sendall(json.dumps(response).encode())
 
     async def setOn(self, uuid, channel=0):
@@ -353,20 +353,23 @@ def convert_log_level(level='error'):
 
 def handler(signum=None, frame=None):
     logging.debug("Signal %i caught, exiting..." % int(signum))
-    asyncio.run(shutdown())
+    shutdown()
 
 
-async def shutdown():
+def shutdown():
     logging.debug("Arrêt")
     logging.debug("Arrêt Meross Manager")
+    updateElec()
     meross_manager.unregister_push_notification_handler_coroutine(jc.event_handler)
     meross_manager.close()
-    await http_api_client.async_logout()
+    try:
+        asyncio.run(http_api_client.async_logout())
+    except:
+        pass
     logging.debug("Stop callback server")
     jc.stop()
     logging.debug("Arrêt du démon local")
     server.shutdown()
-    updateElec()
     logging.debug("Effacement fichier PID " + str(_pidfile))
     if os.path.exists(_pidfile):
         os.remove(_pidfile)
@@ -374,6 +377,7 @@ async def shutdown():
     if os.path.exists(_sockfile):
         os.remove(_sockfile)
     logging.debug("Exit 0")
+
 
 
 # ----------------------------------------------------------------------------
@@ -419,16 +423,16 @@ def UpdateAllElectricity(interval):
     return stopped.set
 
 
-async def main(user, pswd):
+async def main(email, password):
     # Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-    http_api_client = await MerossHttpClient.async_from_user_password(
-        email=user,
-        password=pswd)
-    meross_manager: MerossManager = MerossManager(http_client=http_api_client)
+    http = await MerossHttpClient.async_from_user_password(
+        email=email,
+        password=password)
+    mm = MerossManager(http_client=http)
     # Register event handlers for the manager...
-    meross_manager.register_push_notification_handler_coroutine(jc.event_handler)
-    await meross_manager.async_init()
-    await meross_manager.async_device_discovery()
+    mm.register_push_notification_handler_coroutine(jc.event_handler)
+    await mm.async_device_discovery()
+    return http, mm
 
 
 # ----------------------------------------------------------------------------
@@ -479,11 +483,8 @@ if os.path.exists(args.socket):
 
 server = socketserver.UnixStreamServer(args.socket, JeedomHandler)
 logging.info('Démarrage Meross Manager')
-# Initiates the Meross Cloud Manager. This is in charge of handling the communication with the remote endpoint
-http_api_client: MerossHttpClient
-meross_manager: MerossManager
 
-asyncio.run(main(args.muser, args.mpswd))
+http_api_client, meross_manager = asyncio.run(main(email=args.muser, password=args.mpswd))
 
 logging.info('HttpApiClient : {}'.format(http_api_client))
 logging.info('MerossManager : {}'.format(meross_manager))
