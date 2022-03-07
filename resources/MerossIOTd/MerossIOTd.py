@@ -212,6 +212,7 @@ class JeedomHandler(socketserver.BaseRequestHandler):
             await device.async_update()
         except:
             pass
+        logging.info("[syncOneMeross] DEvice : {}".format(device))
         d = dict({
             'name': device.name,
             'uuid': device.uuid,
