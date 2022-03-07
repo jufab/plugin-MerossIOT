@@ -208,7 +208,10 @@ class JeedomHandler(socketserver.BaseRequestHandler):
         return 'Not Implemented Yet'
 
     async def syncOneMeross(self, device):
-        await device.async_update()
+        try:
+            await device.async_update()
+        except:
+            pass
         d = dict({
             'name': device.name,
             'uuid': device.uuid,
