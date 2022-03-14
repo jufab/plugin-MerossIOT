@@ -52,12 +52,11 @@ def shutdown():
     logging.debug("Effacement fichier socket " + str(_sockfile))
     if os.path.exists(_sockfile):
         os.remove(_sockfile)
-    logging.debug("Exit 0")
 
 
 def main() -> None:
-    global main_loop
-    main_loop = asyncio.new_event_loop()
+    #global main_loop
+    #main_loop: AbstractEventLoop = asyncio.new_event_loop()
     asyncio.set_event_loop(main_loop)
     executor = ThreadPoolExecutor(max_workers=5, )
     main_loop.set_default_executor(executor)
@@ -106,5 +105,5 @@ if __name__ == "__main__":
         sys.exit()
 
     meross_coordinator: MerossCoordinator = MerossCoordinator(email=args.muser, password=args.mpswd)
-    main_loop: AbstractEventLoop = None
+    main_loop: AbstractEventLoop = asyncio.new_event_loop()
     main()
