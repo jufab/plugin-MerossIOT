@@ -24,7 +24,7 @@ class MerossIOT extends eqLogic {
      */
     public static function cron10() {
         log::add('MerossIOT', 'debug', __('Mise à jour des consommations des équipements depuis le Cloud Meross', __FILE__));
-        $results = self::callMeross('syncMerossConso');
+        $results = self::callMeross('update_meross_conso');
         foreach( $results['result'] as $uuid=>$data ) {
             $eqLogic = MerossIOT::byLogicalId($uuid, 'MerossIOT');
             if( is_object($eqLogic) ) {
@@ -63,7 +63,7 @@ class MerossIOT extends eqLogic {
      */
     public static function syncMeross() {
         log::add('MerossIOT', 'debug', __('Synchronisation des équipements depuis le Cloud Meross', __FILE__));
-        $results = self::callMeross('syncMeross');
+        $results = self::callMeross('get_devices_meross');
         foreach( $results['result'] as $key=>$device ) {
             self::syncOneMeross($device);
         }
@@ -841,36 +841,36 @@ class MerossIOTCmd extends cmd {
         $channel = $splitAction[1];
         switch ($action) {
             case "on":
-                $res = MerossIOT::callMeross('setOn', [$eqLogic->getLogicalId(), $channel]);
-                log::add('MerossIOT', 'debug', 'setOn: '.json_encode($res['result']));
+                $res = MerossIOT::callMeross('set_on', [$eqLogic->getLogicalId(), $channel]);
+                log::add('MerossIOT', 'debug', 'set_on: '.json_encode($res['result']));
                 break;
             case "off":
-                $res = MerossIOT::callMeross('setOff', [$eqLogic->getLogicalId(), $channel]);
-                log::add('MerossIOT', 'debug', 'setOff: '.json_encode($res['result']));
+                $res = MerossIOT::callMeross('set_off', [$eqLogic->getLogicalId(), $channel]);
+                log::add('MerossIOT', 'debug', 'set_off: '.json_encode($res['result']));
                 break;
             case "lumiset":
-                $res = MerossIOT::callMeross('setLumi', [$eqLogic->getLogicalId(), $_options['slider']]);
-                log::add('MerossIOT', 'debug', 'setLumi '.$_options['slider'].': '.$res['result']);
+                $res = MerossIOT::callMeross('set_lumi', [$eqLogic->getLogicalId(), $_options['slider']]);
+                log::add('MerossIOT', 'debug', 'set_lumi '.$_options['slider'].': '.$res['result']);
                 break;
             case "tempset":
                 $cmd = $eqLogic->getCmd(null, 'lumival');
                 $lumi = $cmd->execCmd();
-                $res = MerossIOT::callMeross('setTemp', [$eqLogic->getLogicalId(), $_options['slider'], $lumi]);
-                log::add('MerossIOT', 'debug', 'setTemp '.$_options['slider'].': '.$res['result']);
+                $res = MerossIOT::callMeross('set_temp', [$eqLogic->getLogicalId(), $_options['slider'], $lumi]);
+                log::add('MerossIOT', 'debug', 'set_temp '.$_options['slider'].': '.$res['result']);
                 break;
             case "rgbset":
                 $cmd = $eqLogic->getCmd(null, 'lumival');
                 $lumi = $cmd->execCmd();
                 $rgb = hexdec($_options['color']);
-                $res = MerossIOT::callMeross('setRGB', [$eqLogic->getLogicalId(), $rgb, $lumi]);
-                log::add('MerossIOT', 'debug', 'setRGB '.$_options['color'].' ('.$rgb.'): '.$res['result']);
+                $res = MerossIOT::callMeross('set_rgb', [$eqLogic->getLogicalId(), $rgb, $lumi]);
+                log::add('MerossIOT', 'debug', 'set_rgb '.$_options['color'].' ('.$rgb.'): '.$res['result']);
                 break;
             case "spray":
-                $res = MerossIOT::callMeross('setSpray', [$eqLogic->getLogicalId(), $channel]);
-                log::add('MerossIOT', 'debug', 'setSpray: '.json_encode($res['result']));
+                $res = MerossIOT::callMeross('set_spray', [$eqLogic->getLogicalId(), $channel]);
+                log::add('MerossIOT', 'debug', 'set_spray: '.json_encode($res['result']));
                 break;
             case "refresh":
-                $res = MerossIOT::callMeross('syncDevice', [$eqLogic->getLogicalId()]);
+                $res = MerossIOT::callMeross('sync_device', [$eqLogic->getLogicalId()]);
                 MerossIOT::syncOneMeross($res['result']);
                 log::add('MerossIOT', 'debug', 'refresh: '.json_encode($res['result']));
                 break;
