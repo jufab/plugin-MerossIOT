@@ -47,6 +47,7 @@ class MerossIOT extends eqLogic {
         $result = '';
         if ($fp) {
             $query = [ 'action' => $action, 'args' => $args, 'apikey' => $apikey ];
+            log::add('MerossIOT', 'debug', 'callMeross ' . print_r($query, true));
             fwrite($fp, json_encode($query));
             while (!feof($fp)) {
                 $result .= fgets($fp, 1024);
