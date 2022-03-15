@@ -23,6 +23,7 @@ async def update_device(meross_coordinator: MerossCoordinator, jc: JeedomCallbac
         else:
             logging.debug('No Send')
 
+
 async def handler_jeedom(reader, writer):
     data = await reader.read(1024)
     logging.debug(f"received from socket : {data.decode()}")
