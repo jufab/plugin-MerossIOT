@@ -22,6 +22,17 @@ async def update_device(meross_coordinator: MerossCoordinator, jc: JeedomCallbac
         else:
             logging.debug('No Send')
 
+async def handler_jeedom(reader, writer):
+    data = await reader.read(1024)
+    message = data.decode()
+    addr = writer.get_extra_info('peername')
+    print('Received %r from %r' % (message, addr))
+    print('Send: %r' % message)
+    writer.write(message.encode())
+    await writer.drain()
+    print('Close the client socket')
+    writer.close()
+
 
 def convert_log_level(level='error'):
     LEVELS = {'debug': logging.DEBUG,
@@ -55,14 +66,12 @@ def shutdown():
 
 
 def main() -> None:
-    #global main_loop
-    #main_loop: AbstractEventLoop = asyncio.new_event_loop()
     asyncio.set_event_loop(main_loop)
     executor = ThreadPoolExecutor(max_workers=5, )
     main_loop.set_default_executor(executor)
     asyncio.ensure_future(meross_coordinator.initial_setup(jc.event_handler))
+    asyncio.ensure_future(asyncio.start_unix_server(handler_jeedom, path=_sockfile))
     asyncio.ensure_future(update_device(meross_coordinator=meross_coordinator, jc=jc, delay=delay))
-    asyncio.ensure_future(asyncio.start_unix_server(JeedomHandler, path=_sockfile))
     main_loop.run_forever()
 
 
