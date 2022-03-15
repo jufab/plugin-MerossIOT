@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import json
 import logging
 import os
 import signal
@@ -24,11 +25,26 @@ async def update_device(meross_coordinator: MerossCoordinator, jc: JeedomCallbac
 
 async def handler_jeedom(reader, writer):
     data = await reader.read(1024)
-    message = data.decode()
-    addr = writer.get_extra_info('peername')
-    logging.debug(f"Received {message} from {addr}")
-    logging.debug("Send: {message}")
-    writer.write(message.encode())
+    message = json.loads(data.decode())
+    lmessage = dict(message)
+    del lmessage['apikey']
+    logging.info(f"Received : {lmessage}")
+    if message.get('apikey') != api_key:
+        logging.error("Invalid apikey from socket : {}".format(data))
+        writer.write("error".encode())
+        await writer.drain()
+        writer.close()
+    response = {'result': None, 'success': True}
+    action = message.get('action')
+    args = message.get('args')
+    if hasattr(meross_coordinator, action):
+        func = getattr(meross_coordinator, action)
+        logging.debug(f"func : {func}")
+        response['result'] = func
+        if callable(response['result']):
+            response['result'] = await response['result'](*args)
+    logging.info(response)
+    writer.write(json.dumps(response).encode())
     await writer.drain()
     logging.debug('Close the client socket')
     writer.close()
@@ -109,7 +125,9 @@ if __name__ == "__main__":
     meross_root_logger = logging.getLogger("meross_iot")
     meross_root_logger.setLevel(convert_log_level(args.loglevel))
 
-    jc = JeedomCallback(args.apikey, args.callback)
+    api_key = args.apikey
+
+    jc = JeedomCallback(api_key, args.callback)
     if not jc.test():
         sys.exit()
 
