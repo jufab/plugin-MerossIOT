@@ -25,7 +25,6 @@ async def update_device(meross_coordinator: MerossCoordinator, jc: JeedomCallbac
 
 async def handler_jeedom(reader, writer):
     data = await reader.read(1024)
-    logging.debug(f"received from socket : {data.decode()}")
     message = json.loads(data.decode())
     lmessage = dict(message)
     del lmessage['apikey']
