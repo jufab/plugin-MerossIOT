@@ -43,7 +43,7 @@ async def handler_jeedom(reader, writer):
         response['result'] = func
         if callable(response['result']):
             response['result'] = await response['result'](*args)
-    logging.info(response)
+    logging.info(f"Response socket : {response}")
     writer.write(json.dumps(response).encode())
     await writer.drain()
     logging.debug('Close the client socket')
