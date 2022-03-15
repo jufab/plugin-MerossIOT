@@ -26,11 +26,11 @@ async def handler_jeedom(reader, writer):
     data = await reader.read(1024)
     message = data.decode()
     addr = writer.get_extra_info('peername')
-    print('Received %r from %r' % (message, addr))
-    print('Send: %r' % message)
+    logging.debug(f"Received {message} from {addr}")
+    logging.debug("Send: {message}")
     writer.write(message.encode())
     await writer.drain()
-    print('Close the client socket')
+    logging.debug('Close the client socket')
     writer.close()
 
 
