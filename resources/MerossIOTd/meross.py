@@ -296,7 +296,7 @@ async def get_one_device_meross(device):
 
     # En Ligne Seulement
     data = device.abilities
-    logger.info("[syncOneMeross] Data : {}".format(data))
+    logger.info(f"[get_one_device_meross] Data : {data}")
     d[device.uuid]['values'] = {}
     # Nom Canaux
     onoff = [device.name]
@@ -307,7 +307,7 @@ async def get_one_device_meross(device):
             pass
     d[device.uuid]['onoff'] = onoff
 
-    logger.info("[syncOneMeross] d après onoff: {}".format(d))
+    logger.info(f"[get_one_device_meross] d après onoff: {d}")
     # Valeur Canaux
     switch = []
     try:

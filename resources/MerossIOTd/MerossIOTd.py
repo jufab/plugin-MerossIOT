@@ -39,8 +39,8 @@ async def handler_jeedom(reader, writer):
     args = message.get('args')
     if hasattr(meross_coordinator, action):
         func = getattr(meross_coordinator, action)
-        logging.debug(f"func : {func}")
         response['result'] = func
+        logging.debug(f"response avant appel : {response}")
         if callable(response['result']):
             response['result'] = await response['result'](*args)
     logging.info(f"Response socket : {response}")
