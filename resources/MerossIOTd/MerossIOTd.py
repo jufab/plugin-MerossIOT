@@ -8,7 +8,7 @@ import sys
 from asyncio import AbstractEventLoop
 from concurrent.futures import ThreadPoolExecutor
 
-from jeedom import JeedomCallback, JeedomHandler
+from jeedom import JeedomCallback
 from meross import MerossCoordinator
 
 
@@ -26,13 +26,13 @@ async def update_device(meross_coordinator: MerossCoordinator, jc: JeedomCallbac
 
 async def handler_jeedom(reader, writer):
     data = await reader.read(1024)
-    logging.debug(f"received from socket : {data.decode()}")
+    logging.debug(f"data : {data.decode()}")
     message = json.loads(data.decode())
     lmessage = dict(message)
     del lmessage['apikey']
     logging.info(f"Received : {lmessage}")
-    if message.get('apikey') != api_key:
-        logging.error("Invalid apikey from socket : {}".format(data))
+    if message.get('apikey') != _api_key:
+        logging.error(f"Invalid apikey from socket : {data}")
         writer.write("error".encode())
         await writer.drain()
         writer.close()
@@ -89,7 +89,7 @@ def main() -> None:
     main_loop.set_default_executor(executor)
     asyncio.ensure_future(meross_coordinator.initial_setup(jc.event_handler))
     asyncio.ensure_future(asyncio.start_unix_server(handler_jeedom, path=_sockfile))
-    asyncio.ensure_future(update_device(meross_coordinator=meross_coordinator, jc=jc, delay=delay))
+    asyncio.ensure_future(update_device(meross_coordinator=meross_coordinator, jc=jc, delay=_delay))
     main_loop.run_forever()
 
 
@@ -105,9 +105,10 @@ if __name__ == "__main__":
     parser.add_argument('--socket', help='Daemon socket', default='MerossIOTd.sock')
     args = parser.parse_args()
 
-    delay = args.mupdp
+    _delay = args.mupdp
     _pidfile = args.pidfile
     _sockfile = args.socket
+    _api_key = args.apikey
 
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
@@ -127,9 +128,7 @@ if __name__ == "__main__":
     meross_root_logger = logging.getLogger("meross_iot")
     meross_root_logger.setLevel(convert_log_level(args.loglevel))
 
-    api_key = args.apikey
-
-    jc = JeedomCallback(api_key, args.callback)
+    jc = JeedomCallback(_api_key, args.callback)
     if not jc.test():
         sys.exit()
 

@@ -112,34 +112,3 @@ class JeedomCallback:
         #          'status': int(eventobj.spry_mode.value)})
         # elif eventobj.event_type == MerossEventType.CLIENT_CONNECTION:
         #    self.send({'action': 'connect', 'status': eventobj.status.value})
-
-
-# Reception de Jeedom ----------------------------------------------------------
-class JeedomHandler(socketserver.BaseRequestHandler):
-
-    def __init__(self, meross_coordinator: MerossCoordinator, api_key):
-        self._meross_coordinator = meross_coordinator
-        self._api_key = api_key
-        super().__init__(self)
-
-    def handle(self):
-        # self.request is the TCP socket connected to the client
-        data = self.request.recv(1024)
-        logging.info("Message received in socket")
-        message = json.loads(data.decode())
-        lmessage = dict(message)
-        del lmessage['apikey']
-        logging.info(lmessage)
-        if message.get('apikey') != self._api_key:
-            logging.error("Invalid apikey from socket : {}".format(data))
-            return
-        response = {'result': None, 'success': True}
-        action = message.get('action')
-        args = message.get('args')
-        if hasattr(self._meross_coordinator, action):
-            func = getattr(self._meross_coordinator, action)
-            response['result'] = func
-            if callable(response['result']):
-                response['result'] = response['result'](*args)
-        logging.info(response)
-        self.request.sendall(json.dumps(response).encode())
