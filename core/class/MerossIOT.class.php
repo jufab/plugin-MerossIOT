@@ -89,13 +89,15 @@ class MerossIOT extends eqLogic
      * Sync one meross devices.
      * @return none
      */
-    public static function syncOneMeross($device)
+    public static function syncOneMeross($deviceId)
     {
-        $key = $device['uuid'];
+        log::add('MerossIOT', 'debug', 'syncOneMeross: Ajout du device '.$deviceId);
+        $key = $deviceId['uuid'];
+        $device = $deviceId['uuid'];
         $eqLogic = self::byLogicalId($key, 'MerossIOT');
         # Création ou Update
         if (!is_object($eqLogic)) {
-            log::add('MerossIOT', 'debug', 'syncMeross: Ajout de '.$device["name"].' - '.$key);
+            log::add('MerossIOT', 'debug', 'syncOneMeross: Ajout de '.$device['name'].' - '.$key);
             $eqLogic = new MerossIOT();
             $eqLogic->setName($device['name']);
             $eqLogic->setEqType_name('MerossIOT');
@@ -115,7 +117,7 @@ class MerossIOT extends eqLogic
             log::add(
                 'MerossIOT',
                 'debug',
-                'syncMeross: Mise à jour de '.$device["name"].' - '.$key
+                'syncOneMeross: Mise à jour de '.$device['name'].' - '.$key
             );
             if ($device['online'] != '') {
                 $eqLogic->setConfiguration('online', $device['online']);
@@ -124,7 +126,7 @@ class MerossIOT extends eqLogic
             }
         }
         # Si online, on continue
-        log::add('MerossIOT', 'debug', 'syncMeross: En ligne : '.$device["online"].' - '.$key);
+        log::add('MerossIOT', 'debug', 'syncOneMeross: En ligne : '.$device['online'].' - '.$key);
         if ($device['online']) {
             if ($device['ip'] != '') {
                 $eqLogic->setConfiguration('ip', $device['ip']);
@@ -922,19 +924,15 @@ class MerossIOTCmd extends cmd
                 log::add('MerossIOT', 'debug', 'set_off: '.json_encode($res['result']));
                 break;
             case "lumiset":
-                $res = MerossIOT::callMeross(
-                    'set_lumi',
-                    [$eqLogic->getLogicalId(), $_options['slider']]
-                );
+                $res = MerossIOT::callMeross('set_lumi',
+                    [$eqLogic->getLogicalId(), $_options['slider']]);
                 log::add('MerossIOT', 'debug', 'set_lumi '.$_options['slider'].': '.$res['result']);
                 break;
             case "tempset":
                 $cmd = $eqLogic->getCmd(null, 'lumival');
                 $lumi = $cmd->execCmd();
-                $res = MerossIOT::callMeross(
-                    'set_temp',
-                    [$eqLogic->getLogicalId(), $_options['slider'], $lumi]
-                );
+                $res = MerossIOT::callMeross('set_temp',
+                    [$eqLogic->getLogicalId(), $_options['slider'], $lumi]);
                 log::add('MerossIOT', 'debug', 'set_temp '.$_options['slider'].': '.$res['result']);
                 break;
             case "rgbset":
