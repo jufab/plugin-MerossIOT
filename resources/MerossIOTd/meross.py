@@ -248,10 +248,10 @@ async def get_device_electricity(device: ElectricityMixin):
         logger.debug(f'[get_device_electricity] device : {device}')
         electricity = await device.async_get_instant_metrics()
         logger.debug(f'[get_device_electricity] electricity : {electricity}')
-        d = {device.uuid: dict({'power': 0, 'current': 0, 'voltage': 0})}
-        d[device.uuid]['power'] = electricity.power
-        d[device.uuid]['voltage'] = electricity.voltage
-        d[device.uuid]['current'] = electricity.current
+        d = dict({'uuid': device.uuid, 'power': 0, 'current': 0, 'voltage': 0})
+        d['power'] = electricity.power
+        d['voltage'] = electricity.voltage
+        d['current'] = electricity.current
         return d
     except Exception as e:
         logger.error(f'[get_device_electricity] error : {e}')
@@ -263,12 +263,12 @@ async def get_device_consumption(device: ConsumptionXMixin):
         logger.debug(f'[get_device_consumption] device : {device}')
         conso = await device.async_get_daily_power_consumption()
         logger.debug(f'[get_device_consumption] conso : {conso}')
-        d = {device.uuid: dict({'conso_totale': 0})}
+        d = dict({'uuid': device.uuid, 'conso_totale': 0})
         today = datetime.today().strftime("%Y-%m-%d")
         for c in conso:
             dateconso = c['date'].strftime("%Y-%m-%d")
             if dateconso == today:
-                d[device.uuid]['conso_totale'] = c['value']
+                d['conso_totale'] = c['value']
         return d
     except Exception as e:
         logger.error(f'[get_device_consumption] error : {e}')
@@ -282,14 +282,15 @@ async def get_one_device_meross(device):
         logger.error("Erreur lors de l'async : {}".format(ex))
         pass
     logger.info("[get_one_device_meross] device : {}".format(device))
-    d = {device.uuid: dict({
+    d = dict({
         'name': device.name,
+        'uuid': device.uuid,
         'famille': str(device.__class__.__name__),
         'online': device.online_status == OnlineStatus.ONLINE,
         'type': device.type,
         'ip': '',
         'mac': ''
-    })}
+    })
     # Hors ligne : fin
     if device.online_status != OnlineStatus.ONLINE:
         return d
@@ -297,7 +298,7 @@ async def get_one_device_meross(device):
     # En Ligne Seulement
     data = device.abilities
     logger.info(f"[get_one_device_meross] Data : {data}")
-    d[device.uuid]['values'] = {}
+    d['values'] = {}
     # Nom Canaux
     onoff = [device.name]
     for x in device._channels:
@@ -305,7 +306,7 @@ async def get_one_device_meross(device):
             onoff.append(x['name'])
         except:
             pass
-    d[device.uuid]['onoff'] = onoff
+    d['onoff'] = onoff
 
     logger.info(f"[get_one_device_meross] d après onoff: {d}")
     # Valeur Canaux
@@ -319,50 +320,50 @@ async def get_one_device_meross(device):
                 switch.append(device.get_light_is_on(channel=x.index))
         except:
             pass
-    d[device.uuid]['values']['switch'] = switch
+    d['values']['switch'] = switch
     # Puissance
     if Namespace.CONTROL_ELECTRICITY in data.keys():
-        d[device.uuid]['elec'] = True
+        d['elec'] = True
         electricity = await device.async_get_instant_metrics()
-        d[device.uuid]['values']['power'] = electricity.power
-        d[device.uuid]['values']['current'] = electricity.current
-        d[device.uuid]['values']['voltage'] = electricity.voltage
+        d['values']['power'] = electricity.power
+        d['values']['current'] = electricity.current
+        d['values']['voltage'] = electricity.voltage
     else:
-        d[device.uuid]['elec'] = False
+        d['elec'] = False
     # Consommation
     if Namespace.CONTROL_CONSUMPTIONX in data.keys() or Namespace.CONTROL_CONSUMPTION in data.keys():
-        d[device.uuid]['conso'] = True
+        d['conso'] = True
         l_conso = await device.async_get_daily_power_consumption()
-        d[device.uuid]['values']['conso_totale'] = 0
+        d['values']['conso_totale'] = 0
         today = datetime.today().strftime("%Y-%m-%d")
         for c in l_conso:
             dateconso = c['date'].strftime("%Y-%m-%d")
             if dateconso == today:
-                d[device.uuid]['values']['conso_totale'] = c['value']
+                d['values']['conso_totale'] = c['value']
     else:
-        d[device.uuid]['conso'] = False
+        d['conso'] = False
     # Lumiere
     if Namespace.CONTROL_LIGHT in data.keys():
-        d[device.uuid]['light'] = True
-        d[device.uuid]['lumin'] = device.get_supports_luminance()
-        d[device.uuid]['tempe'] = device.get_supports_temperature()
-        d[device.uuid]['isrgb'] = device.get_supports_rgb()
-        if d[device.uuid]['lumin']:
-            d[device.uuid]['values']['lumival'] = device.get_luminance()
-        if d[device.uuid]['tempe']:
-            d[device.uuid]['values']['tempval'] = device.get_color_temperature()
-        if d[device.uuid]['isrgb']:
-            d[device.uuid]['values']['rgbval'] = device.get_rgb_color()
+        d['light'] = True
+        d['lumin'] = device.get_supports_luminance()
+        d['tempe'] = device.get_supports_temperature()
+        d['isrgb'] = device.get_supports_rgb()
+        if d['lumin']:
+            d['values']['lumival'] = device.get_luminance()
+        if d['tempe']:
+            d['values']['tempval'] = device.get_color_temperature()
+        if d['isrgb']:
+            d['values']['rgbval'] = device.get_rgb_color()
     else:
-        d[device.uuid]['light'] = False
-        d[device.uuid]['lumin'] = False
-        d[device.uuid]['tempe'] = False
-        d[device.uuid]['isrgb'] = False
+        d['light'] = False
+        d['lumin'] = False
+        d['tempe'] = False
+        d['isrgb'] = False
     # HUMIDIFIER
     if Namespace.CONTROL_SPRAY in data.keys():
-        d[device.uuid]['spray'] = True
+        d['spray'] = True
         # d[device.uuid]['values']['spray'] = device.get_spray_mode().value
     else:
-        d[device.uuid]['spray'] = False
+        d['spray'] = False
     # Fini
     return d
