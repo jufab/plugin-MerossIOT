@@ -79,8 +79,8 @@ class MerossIOT extends eqLogic
     {
         log::add('MerossIOT', 'debug', 'Synchronisation des équipements depuis le Cloud Meross');
         $results = self::callMeross('get_devices_meross');
-        foreach ($results->result as $key => $device) {
-            self::syncOneMeross($key, $device);
+        foreach ($results['result'] as $uuid => $device) {
+            self::syncOneMeross($uuid, $device);
         }
         log::add('MerossIOT', 'debug', 'syncMeross: synchronisation terminée.');
     }
