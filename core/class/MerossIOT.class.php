@@ -79,8 +79,8 @@ class MerossIOT extends eqLogic
     {
         log::add('MerossIOT', 'debug', 'Synchronisation des équipements depuis le Cloud Meross');
         $results = self::callMeross('get_devices_meross');
-        foreach ($results['result'] as $key => $device) {
-            self::syncOneMeross($device);
+        foreach ($results->result as $key => $device) {
+            self::syncOneMeross($key, $device);
         }
         log::add('MerossIOT', 'debug', 'syncMeross: synchronisation terminée.');
     }
@@ -89,11 +89,9 @@ class MerossIOT extends eqLogic
      * Sync one meross devices.
      * @return none
      */
-    public static function syncOneMeross($deviceId)
+    public static function syncOneMeross($key, $device)
     {
-        log::add('MerossIOT', 'debug', 'syncOneMeross: Ajout du device '.$deviceId);
-        $key = $deviceId['uuid'];
-        $device = $deviceId['uuid'];
+        log::add('MerossIOT', 'debug', 'syncOneMeross: Ajout du device '.$key);
         $eqLogic = self::byLogicalId($key, 'MerossIOT');
         # Création ou Update
         if (!is_object($eqLogic)) {
@@ -924,15 +922,19 @@ class MerossIOTCmd extends cmd
                 log::add('MerossIOT', 'debug', 'set_off: '.json_encode($res['result']));
                 break;
             case "lumiset":
-                $res = MerossIOT::callMeross('set_lumi',
-                    [$eqLogic->getLogicalId(), $_options['slider']]);
+                $res = MerossIOT::callMeross(
+                    'set_lumi',
+                    [$eqLogic->getLogicalId(), $_options['slider']]
+                );
                 log::add('MerossIOT', 'debug', 'set_lumi '.$_options['slider'].': '.$res['result']);
                 break;
             case "tempset":
                 $cmd = $eqLogic->getCmd(null, 'lumival');
                 $lumi = $cmd->execCmd();
-                $res = MerossIOT::callMeross('set_temp',
-                    [$eqLogic->getLogicalId(), $_options['slider'], $lumi]);
+                $res = MerossIOT::callMeross(
+                    'set_temp',
+                    [$eqLogic->getLogicalId(), $_options['slider'], $lumi]
+                );
                 log::add('MerossIOT', 'debug', 'set_temp '.$_options['slider'].': '.$res['result']);
                 break;
             case "rgbset":
