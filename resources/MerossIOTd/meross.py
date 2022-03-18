@@ -340,7 +340,7 @@ async def get_one_device_meross(device):
             dateconso = c['date'].strftime("%Y-%m-%d")
             if dateconso == today:
                 logger.debug(f"[get_one_device_meross] c: {c}")
-                d['values']['conso_totale'] = c['value']
+                d['values']['conso_totale'] = c['total_consumption_kwh']
     else:
         d['conso'] = False
     # Lumiere
