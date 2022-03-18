@@ -322,7 +322,7 @@ async def get_one_device_meross(device):
             pass
     d['values']['switch'] = switch
     # Puissance
-    if Namespace.CONTROL_ELECTRICITY in data.keys():
+    if Namespace.CONTROL_ELECTRICITY.value in data.keys():
         d['elec'] = True
         electricity = await device.async_get_instant_metrics()
         d['values']['power'] = electricity.power
@@ -331,7 +331,7 @@ async def get_one_device_meross(device):
     else:
         d['elec'] = False
     # Consommation
-    if Namespace.CONTROL_CONSUMPTIONX in data.keys() or Namespace.CONTROL_CONSUMPTION in data.keys():
+    if Namespace.CONTROL_CONSUMPTIONX.value in data.keys() or Namespace.CONTROL_CONSUMPTION.value in data.keys():
         d['conso'] = True
         l_conso = await device.async_get_daily_power_consumption()
         d['values']['conso_totale'] = 0
@@ -343,7 +343,7 @@ async def get_one_device_meross(device):
     else:
         d['conso'] = False
     # Lumiere
-    if Namespace.CONTROL_LIGHT in data.keys():
+    if Namespace.CONTROL_LIGHT.value in data.keys():
         d['light'] = True
         d['lumin'] = device.get_supports_luminance()
         d['tempe'] = device.get_supports_temperature()
@@ -360,7 +360,7 @@ async def get_one_device_meross(device):
         d['tempe'] = False
         d['isrgb'] = False
     # HUMIDIFIER
-    if Namespace.CONTROL_SPRAY in data.keys():
+    if Namespace.CONTROL_SPRAY.value in data.keys():
         d['spray'] = True
         # d[device.uuid]['values']['spray'] = device.get_spray_mode().value
     else:
