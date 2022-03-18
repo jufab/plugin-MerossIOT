@@ -790,7 +790,7 @@ class MerossIOT extends eqLogic
                 log::add(
                     'MerossIOT',
                     'info',
-                    'Cycle mise à jour puissance inférieur à 5 secondes.')
+                    'Cycle mise à jour puissance inférieur à 5 secondes.'
                 );
             }
         } else {
@@ -811,7 +811,7 @@ class MerossIOT extends eqLogic
         $cmd .= ' --socket '.jeedom::getTmpFolder('MerossIOT').'/daemon.sock';
 
         $log = str_replace($pswd, 'xxx', str_replace($user, 'xxx', $cmd));
-        log::add('MerossIOT', 'info', 'Lancement démon meross :').' '.$log);
+        log::add('MerossIOT', 'info', 'Lancement démon meross :'.' '.$log);
         $result = exec($cmd.' >> '.log::getPathToLog('MerossIOT').' 2>&1 &');
         $i = 0;
         while ($i < 10) {
@@ -826,7 +826,7 @@ class MerossIOT extends eqLogic
             log::add(
                 'MerossIOT',
                 'error',
-                'Impossible de lancer le démon meross, vérifiez le log'),
+                'Impossible de lancer le démon meross, vérifiez le log',
                 'unableStartDeamon'
             );
 
