@@ -20,6 +20,7 @@ require_once dirname(__FILE__).'/../../../../core/php/core.inc.php';
 
 class MerossIOT extends eqLogic
 {
+    public static $_widgetPossibility = array('custom' => true);
     /*
      * Fonction exécutée automatiquement par Jeedom
      */
