@@ -137,7 +137,7 @@ class MerossCoordinator:
                 'action': 'switch',
                 'uuid': uuid,
                 'channel': channel,
-                'status': device.is_on(channel=channel)
+                'status': 1 if device.is_on(channel=channel) else 0
             })
             return response
         else:
@@ -155,7 +155,7 @@ class MerossCoordinator:
                 'action': 'switch',
                 'uuid': uuid,
                 'channel': channel,
-                'status': device.is_on(channel=channel)
+                'status': 1 if device.is_on(channel=channel) else 0
             })
             return response
         else:
