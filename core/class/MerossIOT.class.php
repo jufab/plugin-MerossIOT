@@ -413,7 +413,7 @@ class MerossIOT extends eqLogic
                 $cmd->setUnite('V');
                 $cmd->setEqLogic_id($_eqLogic->getId());
             } else {
-                log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=tension');
+                log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=voltage');
             }
             $cmd->setOrder($order);
             $cmd->save();
