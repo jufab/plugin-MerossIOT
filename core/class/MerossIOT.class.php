@@ -162,18 +162,18 @@ class MerossIOT extends eqLogic
             } else {
                 if ($key == "capacity") {
                     if ($value == 1 || $value == 5) {
-                        $value = 'Couleur';
+                        $value = __('Couleur', __FILE__);
                     } else {
-                        $value = 'Blanc';
+                        $value = __('Blanc', __FILE__);
                     }
                 }
                 if ($key == "spray") {
                     if ($value == 1) {
-                        $value = 'Continu';
+                        $value = __('Continu', __FILE__);
                     } elseif ($value == 2) {
-                        $value = 'Intermittent';
+                        $value = __('Intermittent', __FILE__);
                     } else {
-                        $value = 'Arrêt';
+                        $value = __('Arrêt', __FILE__);
                     }
                 }
                 if ($key == "rgbval") {
@@ -213,7 +213,7 @@ class MerossIOT extends eqLogic
                 } else {
                     log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=on_'.$i);
                 }
-                $cmd->setName($value.' '.'Marche');
+                $cmd->setName($value.' '.__('Marche', __FILE__));
                 $cmd->setOrder($order);
                 $cmd->save();
                 $order++;
@@ -232,7 +232,7 @@ class MerossIOT extends eqLogic
                 } else {
                     log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=off_'.$i);
                 }
-                $cmd->setName($value.' '.'Arrêt');
+                $cmd->setName($value.' '.__('Arrêt', __FILE__));
                 $cmd->setOrder($order);
                 $cmd->save();
                 $order++;
@@ -285,7 +285,7 @@ class MerossIOT extends eqLogic
                         $cmd->setGeneric_type('ENERGY_OFF');
                     }
                     $cmd->setIsVisible(1);
-                    $cmd->setName('Arrêt'.' '.$i);
+                    $cmd->setName(__('Arrêt', __FILE__).' '.$i);
                     $cmd->setLogicalId('off_'.$i);
                     $cmd->setEqLogic_id($_eqLogic->getId());
                 } else {
@@ -317,7 +317,7 @@ class MerossIOT extends eqLogic
                         $cmd->setGeneric_type('ENERGY_ON');
                     }
                     $cmd->setIsVisible(1);
-                    $cmd->setName('Marche'.' '.$i);
+                    $cmd->setName(__('Marche', __FILE__).' '.$i);
                     $cmd->setLogicalId('on_'.$i);
                     $cmd->setEqLogic_id($_eqLogic->getId());
                 } else {
@@ -357,23 +357,20 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=power');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Puissance');
+                $cmd->setName(__('Puissance', __FILE__));
                 $cmd->setType('info');
                 $cmd->setSubType('numeric');
                 $cmd->setGeneric_type('POWER');
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(1);
                 $cmd->setEventOnly(1);
-                log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=power 1/2');
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('power');
-                log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=power 1/3');
                 $cmd->setConfiguration('minValue', 0);
                 $cmd->setConfiguration('maxValue', 4000);
                 $cmd->setUnite('W');
                 $cmd->setEqLogic_id($_eqLogic->getId());
-                log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=power 2/2');
             } else {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=power');
             }
@@ -385,7 +382,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('merossiot', 'debug', 'syncMeross: - Add cmd=current');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Courant');
+                $cmd->setName(__('Courant', __FILE__));
                 $cmd->setType('info');
                 $cmd->setSubType('numeric');
                 $cmd->setIsVisible(1);
@@ -410,7 +407,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('merossiot', 'debug', 'syncMeross: - Add cmd=tension');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Tension');
+                $cmd->setName(__('Tension', __FILE__));
                 $cmd->setType('info');
                 $cmd->setSubType('numeric');
                 $cmd->setGeneric_type('VOLTAGE');
@@ -438,7 +435,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=conso_totale');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Consommation');
+                $cmd->setName(__('Consommation', __FILE__));
                 $cmd->setType('info');
                 $cmd->setSubType('numeric');
                 $cmd->setGeneric_type('CONSUMPTION');
@@ -487,7 +484,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=lumiset');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Luminosité');
+                $cmd->setName(__('Luminosité', __FILE__));
                 $cmd->setType('action');
                 $cmd->setSubType('slider');
                 $cmd->setGeneric_type('LIGHT_SLIDER');
@@ -536,7 +533,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=tempset');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Température');
+                $cmd->setName(__('Température', __FILE__));
                 $cmd->setType('action');
                 $cmd->setSubType('slider');
                 $cmd->setGeneric_type('LIGHT_SET_COLOR_TEMP');
@@ -583,7 +580,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=rgbset');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Couleur');
+                $cmd->setName(__('Couleur', __FILE__));
                 $cmd->setType('action');
                 $cmd->setSubType('color');
                 $cmd->setGeneric_type('LIGHT_SET_COLOR');
@@ -609,7 +606,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=capacity');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Mode');
+                $cmd->setName(__('Mode', __FILE__));
                 $cmd->setType('info');
                 $cmd->setSubType('string');
                 $cmd->setGeneric_type('GENERIC_INFO');
@@ -641,7 +638,7 @@ class MerossIOT extends eqLogic
                 $cmd->setIsVisible(1);
                 $cmd->setLogicalId('spray_0');
                 $cmd->setEqLogic_id($_eqLogic->getId());
-                $cmd->setName('Arrêt');
+                $cmd->setName(__('Arrêt', __FILE__));
             } else {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=spray_0');
             }
@@ -660,7 +657,7 @@ class MerossIOT extends eqLogic
                 $cmd->setIsVisible(1);
                 $cmd->setLogicalId('spray_1');
                 $cmd->setEqLogic_id($_eqLogic->getId());
-                $cmd->setName('Continu');
+                $cmd->setName(__('Continu', __FILE__));
             } else {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=spray_1');
             }
@@ -679,7 +676,7 @@ class MerossIOT extends eqLogic
                 $cmd->setIsVisible(1);
                 $cmd->setLogicalId('spray_2');
                 $cmd->setEqLogic_id($_eqLogic->getId());
-                $cmd->setName('Intermittent');
+                $cmd->setName(__('Intermittent', __FILE__));
             } else {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=spray_2');
             }
@@ -691,7 +688,7 @@ class MerossIOT extends eqLogic
             if (!is_object($cmd)) {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=spray');
                 $cmd = new MerossIOTCmd();
-                $cmd->setName('Mode');
+                $cmd->setName(__('Mode', __FILE__));
                 $cmd->setType('info');
                 $cmd->setSubType('string');
                 $cmd->setGeneric_type('GENERIC_INFO');
@@ -782,7 +779,7 @@ class MerossIOT extends eqLogic
     {
         $deamon_info = self::deamon_info();
         if ($deamon_info['launchable'] != 'ok') {
-            throw new Exception('Veuillez vérifier la configuration');
+            throw new Exception(__('Veuillez vérifier la configuration', __FILE__));
         }
         $user = config::byKey('MerossUSR', 'MerossIOT');
         $pswd = quotemeta(config::byKey('MerossPWD', 'MerossIOT'));
@@ -793,7 +790,7 @@ class MerossIOT extends eqLogic
                 log::add(
                     'MerossIOT',
                     'info',
-                    'Cycle mise à jour puissance inférieur à 5 secondes.'
+                    __('Cycle mise à jour puissance inférieur à 5 secondes.', __FILE__)
                 );
             }
         } else {
@@ -814,7 +811,7 @@ class MerossIOT extends eqLogic
         $cmd .= ' --socket '.jeedom::getTmpFolder('MerossIOT').'/daemon.sock';
 
         $log = str_replace($pswd, 'xxx', str_replace($user, 'xxx', $cmd));
-        log::add('MerossIOT', 'info', 'Lancement démon meross :'.' '.$log);
+        log::add('MerossIOT', 'info', __('Lancement démon meross :', __FILE__).' '.$log);
         $result = exec($cmd.' >> '.log::getPathToLog('MerossIOT').' 2>&1 &');
         $i = 0;
         while ($i < 10) {
@@ -829,14 +826,14 @@ class MerossIOT extends eqLogic
             log::add(
                 'MerossIOT',
                 'error',
-                'Impossible de lancer le démon meross, vérifiez le log',
+                __('Impossible de lancer le démon meross, vérifiez le log', __FILE__),
                 'unableStartDeamon'
             );
 
             return false;
         }
         message::removeAll('MerossIOT', 'unableStartDeamon');
-        log::add('MerossIOT', 'info', 'Démon meross lancé.');
+        log::add('MerossIOT', 'info', __('Démon meross lancé.', __FILE__));
 
         return true;
     }
@@ -865,7 +862,7 @@ class MerossIOT extends eqLogic
             log::add(
                 'MerossIOT',
                 'error',
-                'Impossible de stopper le démon meross, tuons le'
+                __('Impossible de stopper le démon meross, tuons le', __FILE__)
             );
             system::kill('MerossIOTd.py');
         }
@@ -893,7 +890,7 @@ class MerossIOT extends eqLogic
             $cache = cache::byKey('dependancy'.'MerossIOT');
             $cache->remove();
             $return['launchable'] = 'nok';
-            $return['launchable_message'] = 'Veuillez (ré-)installer les dépendances';
+            $return['launchable_message'] = __('Veuillez (ré-)installer les dépendances', __FILE__);
         }
 
         return $return;
@@ -965,7 +962,7 @@ class MerossIOTCmd extends cmd
                 log::add(
                     'MerossIOT',
                     'debug',
-                    'action: Action='.$action.' '.'non implementée.'
+                    'action: Action='.$action.' '.__('non implementée.', __FILE__)
                 );
                 break;
         }
