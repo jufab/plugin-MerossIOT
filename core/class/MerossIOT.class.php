@@ -364,13 +364,16 @@ class MerossIOT extends eqLogic
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(1);
                 $cmd->setEventOnly(1);
+                log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=power 1/2');
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('power');
+                log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=power 1/3');
                 $cmd->setConfiguration('minValue', 0);
                 $cmd->setConfiguration('maxValue', 4000);
                 $cmd->setUnite('W');
                 $cmd->setEqLogic_id($_eqLogic->getId());
+                log::add('MerossIOT', 'debug', 'syncMeross: - Add cmd=power 2/2');
             } else {
                 log::add('MerossIOT', 'debug', 'syncMeross: - Update cmd=power');
             }
