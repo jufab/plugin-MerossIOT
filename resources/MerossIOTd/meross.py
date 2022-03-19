@@ -129,7 +129,7 @@ class MerossCoordinator:
         device_tab = self.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
-            if device.abilities[Namespace.GARAGE_DOOR_STATE]:
+            if device.abilities[Namespace.GARAGE_DOOR_STATE.value]:
                 await device.async_close(channel=channel)
             else:
                 await device.async_turn_on(channel=channel)
@@ -141,7 +141,7 @@ class MerossCoordinator:
         device_tab = self.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
-            if device.abilities[Namespace.GARAGE_DOOR_STATE]:
+            if device.abilities[Namespace.GARAGE_DOOR_STATE.value]:
                 await device.async_open(channel=int(channel))
             else:
                 await device.async_turn_off(channel=int(channel))
