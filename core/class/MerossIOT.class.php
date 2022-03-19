@@ -395,9 +395,9 @@ class MerossIOT extends eqLogic
             $cmd->save();
             $order++;
             # Tension
-            $cmd = $_eqLogic->getCmd(null, 'tension');
+            $cmd = $_eqLogic->getCmd(null, 'voltage');
             if (!is_object($cmd)) {
-                log::add('merossiot', 'debug', 'syncMeross: - Add cmd=tension');
+                log::add('merossiot', 'debug', 'syncMeross: - Add cmd=voltage');
                 $cmd = new MerossIOTCmd();
                 $cmd->setName(__('Tension', __FILE__));
                 $cmd->setType('info');
