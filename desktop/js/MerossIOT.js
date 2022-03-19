@@ -1,5 +1,5 @@
 $('.eqLogicAction[data-action=syncMerossIOT]').on('click', function () {
-    $('#div_alert').showAlert({message: '{{Synchronisation avec le cloud Meross en cours...}}', level: 'warning'});
+    $.fn.showAlert({message: '{{Synchronisation avec le cloud Meross en cours...}}', level: 'warning'});
     $.post({
         url: 'plugins/MerossIOT/core/ajax/MerossIOT.ajax.php',
         data: {
@@ -8,10 +8,10 @@ $('.eqLogicAction[data-action=syncMerossIOT]').on('click', function () {
         success: function (data, status) {
             // Test si l'appel a échoué
             if (data.state !== 'ok' || status !== 'success') {
-                $('#div_alert').showAlert({message: data.result, level: 'danger'});
+                $.fn.showAlert({message: data.result, level: 'danger'});
                 return;
             }
-            $('#div_alert').showAlert({message: '{{Synchronisation terminée}}', level: 'success'});
+            $.fn.showAlert({message: '{{Synchronisation terminée}}', level: 'success'});
             window.location.reload();
         },
         error: function (request, status, error) {
@@ -26,7 +26,7 @@ $('.eqLogicAction[data-action=healthMerossIOT]').on('click', function () {
 });
 
 $('.eqLogicAction[data-action=deleteAll]').on('click', function () {
-    $('#div_alert').showAlert({message: '{{Suppression en cours...}}', level: 'warning'});
+    $.fn.showAlert({message: '{{Suppression en cours...}}', level: 'warning'});
     $.post({
         url: 'plugins/MerossIOT/core/ajax/MerossIOT.ajax.php',
         data: {
@@ -35,10 +35,10 @@ $('.eqLogicAction[data-action=deleteAll]').on('click', function () {
         success: function (data, status) {
             // Test si l'appel a échoué
             if (data.state !== 'ok' || status !== 'success') {
-                $('#div_alert').showAlert({message: data.result, level: 'danger'});
+                $.fn.showAlert({message: data.result, level: 'danger'});
                 return;
             }
-            $('#div_alert').showAlert({message: '{{Suppression terminée}}', level: 'success'});
+            $.fn.showAlert({message: '{{Suppression terminée}}', level: 'success'});
             window.location.reload();
         },
         error: function (request, status, error) {
@@ -118,7 +118,7 @@ function addCmdToTable(_cmd) {
     tr += '</tr>';
     $('#table_cmd tbody').append(tr);
     var tr = $('#table_cmd tbody tr:last');
-    jeedom.eqLogic.builSelectCmd({
+    jeedom.eqLogic.buildSelectCmd({
         id: $('.eqLogicAttr[data-l1key=id]').value(),
         filter: {type: 'info'},
         error: function (error) {

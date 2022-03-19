@@ -67,7 +67,6 @@ class MerossIOT extends eqLogic
         }
         $result = (is_json($result)) ? json_decode($result, true) : $result;
         log::add('MerossIOT', 'debug', 'result callMeross '.print_r($result, true));
-
         return $result;
     }
 
