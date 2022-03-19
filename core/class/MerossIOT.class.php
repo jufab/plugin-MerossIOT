@@ -126,12 +126,6 @@ class MerossIOT extends eqLogic
         # Si online, on continue
         log::add('MerossIOT', 'debug', 'syncOneMeross: En ligne : '.$device['online'].' - '.$key);
         if ($device['online']) {
-            if ($device['ip'] != '') {
-                $eqLogic->setConfiguration('ip', $device['ip']);
-            }
-            if ($device['mac'] != '') {
-                $eqLogic->setConfiguration('mac', $device['mac']);
-            }
             $eqLogic->setIsEnable(1);
             $eqLogic->save();
             # Les Commandes

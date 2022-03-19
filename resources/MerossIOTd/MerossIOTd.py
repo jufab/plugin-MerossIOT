@@ -26,7 +26,6 @@ async def update_device(meross_coordinator: MerossCoordinator, jc: JeedomCallbac
 
 async def handler_jeedom(reader, writer):
     data = await reader.read(1024)
-    logging.debug(f"data : {data.decode()}")
     message = json.loads(data.decode())
     lmessage = dict(message)
     del lmessage['apikey']
@@ -85,7 +84,7 @@ def shutdown():
 
 def main() -> None:
     asyncio.set_event_loop(main_loop)
-    executor = ThreadPoolExecutor(max_workers=5, )
+    executor = ThreadPoolExecutor(max_workers=3, )
     main_loop.set_default_executor(executor)
     asyncio.ensure_future(meross_coordinator.initial_setup(jc.event_handler))
     asyncio.ensure_future(asyncio.start_unix_server(handler_jeedom, path=_sockfile))

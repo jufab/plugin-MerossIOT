@@ -3,6 +3,10 @@
 .python-version
 venv37
 
+*.pid
+*.sock
+test_socket.php
+
 ### macOS ###
 # General
 .DS_Store

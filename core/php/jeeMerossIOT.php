@@ -36,7 +36,6 @@ if( $action == 'online' ) {
             $eqLogic->save();
         } else {
             $eqLogic->setStatus('warning', 1);
-            $eqLogic->setConfiguration('ip', '');
             $eqLogic->setConfiguration('online', '0');
             $eqLogic->save();
         }

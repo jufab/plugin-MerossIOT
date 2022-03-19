@@ -287,9 +287,7 @@ async def get_one_device_meross(device):
         'uuid': device.uuid,
         'famille': str(device.__class__.__name__),
         'online': device.online_status == OnlineStatus.ONLINE,
-        'type': device.type,
-        'ip': '',
-        'mac': ''
+        'type': device.type
     })
     # Hors ligne : fin
     if device.online_status != OnlineStatus.ONLINE:

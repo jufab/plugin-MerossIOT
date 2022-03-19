@@ -65,8 +65,6 @@ Lorsque que vous cliquez sur un équipement, vous arrivez sur la page de configu
 Et en dessous vous pouvez consulter :
 
 - Le modèle
-- L'adresse MAC
-- L'adresse IP
 
 b. Santé
 
