@@ -85,7 +85,7 @@ if( $action == 'online' ) {
         if( is_object($eqLogic) ) {
             $eqLogic->checkAndUpdateCmd("power", $data['power']);
             $eqLogic->checkAndUpdateCmd("current", $data['current']);
-            $eqLogic->checkAndUpdateCmd("tension", $data['voltage']);
+            $eqLogic->checkAndUpdateCmd("voltage", $data['voltage']);
         }
     }
 } elseif( $action == 'hlight' ) {

@@ -133,7 +133,13 @@ class MerossCoordinator:
                 await device.async_close(channel=channel)
             else:
                 await device.async_turn_on(channel=channel)
-            return ''
+            response = dict({
+                'action': 'switch',
+                'uuid': uuid,
+                'channel': channel,
+                'status': device.is_on(channel=channel)
+            })
+            return response
         else:
             return 'Unknow device'
 
@@ -145,7 +151,13 @@ class MerossCoordinator:
                 await device.async_open(channel=int(channel))
             else:
                 await device.async_turn_off(channel=int(channel))
-            return
+            response = dict({
+                'action': 'switch',
+                'uuid': uuid,
+                'channel': channel,
+                'status': device.is_on(channel=channel)
+            })
+            return response
         else:
             return 'Unknow device'
 
