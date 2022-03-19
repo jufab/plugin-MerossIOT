@@ -363,7 +363,6 @@ class MerossIOT extends eqLogic
                 $cmd->setGeneric_type('POWER');
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(1);
-                $cmd->setEventOnly(1);
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('power');
@@ -387,7 +386,6 @@ class MerossIOT extends eqLogic
                 $cmd->setSubType('numeric');
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(1);
-                $cmd->setEventOnly(1);
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('current');
@@ -413,7 +411,6 @@ class MerossIOT extends eqLogic
                 $cmd->setGeneric_type('VOLTAGE');
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(1);
-                $cmd->setEventOnly(1);
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('tension');
@@ -441,7 +438,6 @@ class MerossIOT extends eqLogic
                 $cmd->setGeneric_type('CONSUMPTION');
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(1);
-                $cmd->setEventOnly(1);
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('conso_totale');
@@ -612,7 +608,6 @@ class MerossIOT extends eqLogic
                 $cmd->setGeneric_type('GENERIC_INFO');
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(0);
-                $cmd->setEventOnly(1);
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('capacity');
@@ -694,7 +689,6 @@ class MerossIOT extends eqLogic
                 $cmd->setGeneric_type('GENERIC_INFO');
                 $cmd->setIsVisible(1);
                 $cmd->setIsHistorized(0);
-                $cmd->setEventOnly(1);
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
                 $cmd->setLogicalId('spray');
@@ -923,19 +917,15 @@ class MerossIOTCmd extends cmd
                 log::add('MerossIOT', 'debug', 'set_off: '.json_encode($res['result']));
                 break;
             case "lumiset":
-                $res = MerossIOT::callMeross(
-                    'set_lumi',
-                    [$eqLogic->getLogicalId(), $_options['slider']]
-                );
+                $res = MerossIOT::callMeross('set_lumi',
+                    [$eqLogic->getLogicalId(), $_options['slider']]);
                 log::add('MerossIOT', 'debug', 'set_lumi '.$_options['slider'].': '.$res['result']);
                 break;
             case "tempset":
                 $cmd = $eqLogic->getCmd(null, 'lumival');
                 $lumi = $cmd->execCmd();
-                $res = MerossIOT::callMeross(
-                    'set_temp',
-                    [$eqLogic->getLogicalId(), $_options['slider'], $lumi]
-                );
+                $res = MerossIOT::callMeross('set_temp',
+                    [$eqLogic->getLogicalId(), $_options['slider'], $lumi]);
                 log::add('MerossIOT', 'debug', 'set_temp '.$_options['slider'].': '.$res['result']);
                 break;
             case "rgbset":
