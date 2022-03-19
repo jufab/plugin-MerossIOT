@@ -407,7 +407,7 @@ class MerossIOT extends eqLogic
                 $cmd->setIsHistorized(1);
                 $cmd->setTemplate('dashboard', 'default');
                 $cmd->setTemplate('mobile', 'default');
-                $cmd->setLogicalId('tension');
+                $cmd->setLogicalId('voltage');
                 $cmd->setConfiguration('minValue', 0);
                 $cmd->setConfiguration('maxValue', 250);
                 $cmd->setUnite('V');
