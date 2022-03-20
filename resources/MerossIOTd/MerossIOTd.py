@@ -111,6 +111,10 @@ if __name__ == "__main__":
     format_log = '[%(asctime)s][%(levelname)s][%(name)s](%(threadName)s) : %(message)s'
     logging.basicConfig(level=logging.getLevelName(args.loglevel.upper()), format=format_log,
                         datefmt="%Y-%m-%d %H:%M:%S", force=True)
+    logging.getLogger("meross_iot").setLevel(logging.getLevelName(args.loglevel.upper()))
+    logging.getLogger("jeedom").setLevel(logging.getLevelName(args.loglevel.upper()))
+    logging.getLogger("meross_coordinator").setLevel(logging.getLevelName(args.loglevel.upper()))
+
 
     jc = JeedomCallback(_api_key, args.callback)
     if not asyncio.run(jc.test()):
