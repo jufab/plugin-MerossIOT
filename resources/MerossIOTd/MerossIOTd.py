@@ -12,14 +12,14 @@ from jeedom import JeedomCallback
 from meross import MerossCoordinator
 
 
-async def update_device(meross_coordinator: MerossCoordinator, jc: JeedomCallback, delay: int):
+async def update_device_electricity(meross_coordinator: MerossCoordinator, jc: JeedomCallback, delay: int):
     while True:
         await asyncio.sleep(delay=delay)
         devices = await meross_coordinator.update_all_elec_for_all_devices()
         logging.debug(f'devices : {devices}')
         if devices is not {}:
-            logging.info('Send Electricity')
-            jc.send({'action': 'electricity', 'values': devices})
+            logging.info('Send electricity')
+            await jc.send_message({'action': 'electricity', 'values': devices})
         else:
             logging.debug('No Send')
 
@@ -51,17 +51,6 @@ async def handler_jeedom(reader, writer):
     writer.close()
 
 
-def convert_log_level(level='error'):
-    LEVELS = {'debug': logging.DEBUG,
-              'info': logging.INFO,
-              'notice': logging.WARNING,
-              'warning': logging.WARNING,
-              'error': logging.ERROR,
-              'critical': logging.CRITICAL,
-              'none': logging.NOTSET}
-    return LEVELS.get(level, logging.NOTSET)
-
-
 def handler(signum=None, frame=None):
     logging.debug("Signal %i caught, exiting..." % int(signum))
     shutdown()
@@ -73,7 +62,6 @@ def shutdown():
         task.cancel()
     asyncio.ensure_future(meross_coordinator.close())
     main_loop.stop()
-    jc.stop()
     logging.debug("Effacement fichier PID " + str(_pidfile))
     if os.path.exists(_pidfile):
         os.remove(_pidfile)
@@ -84,11 +72,11 @@ def shutdown():
 
 def main() -> None:
     asyncio.set_event_loop(main_loop)
-    executor = ThreadPoolExecutor(max_workers=3, )
+    executor = ThreadPoolExecutor(max_workers=3)
     main_loop.set_default_executor(executor)
     asyncio.ensure_future(meross_coordinator.initial_setup(jc.event_handler))
     asyncio.ensure_future(asyncio.start_unix_server(handler_jeedom, path=_sockfile))
-    asyncio.ensure_future(update_device(meross_coordinator=meross_coordinator, jc=jc, delay=_delay))
+    asyncio.ensure_future(update_device_electricity(meross_coordinator=meross_coordinator, jc=jc, delay=_delay))
     main_loop.run_forever()
 
 
@@ -120,15 +108,12 @@ if __name__ == "__main__":
     if os.path.exists(_sockfile):
         os.unlink(_sockfile)
 
-    FORMAT = '[%(asctime)-15s][%(levelname)s][%(name)s](%(threadName)s) : %(message)s'
-    logging.basicConfig(level=convert_log_level(args.loglevel), format=FORMAT,
-                        datefmt="%Y-%m-%d %H:%M:%S")
-    logging.getLogger().setLevel(convert_log_level(args.loglevel))
-    meross_root_logger = logging.getLogger("meross_iot")
-    meross_root_logger.setLevel(convert_log_level(args.loglevel))
+    format_log = '[%(asctime)s][%(levelname)s][%(name)s](%(threadName)s) : %(message)s'
+    logging.basicConfig(level=logging.getLevelName(args.loglevel.upper()), format=format_log,
+                        datefmt="%Y-%m-%d %H:%M:%S", force=True)
 
     jc = JeedomCallback(_api_key, args.callback)
-    if not jc.test():
+    if not asyncio.run(jc.test()):
         sys.exit()
 
     meross_coordinator: MerossCoordinator = MerossCoordinator(email=args.muser, password=args.mpswd)

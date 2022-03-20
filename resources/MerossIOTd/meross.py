@@ -1,20 +1,20 @@
 import asyncio
 import logging
 from datetime import datetime
-from typing import Tuple, List, Optional, Iterable, Union
+from typing import Tuple, List
 
 import async_timeout
 from meross_iot.controller.mixins.consumption import ConsumptionXMixin
 from meross_iot.controller.mixins.electricity import ElectricityMixin
 from meross_iot.http_api import MerossHttpClient
-from meross_iot.manager import MerossManager, T
+from meross_iot.manager import MerossManager
 from meross_iot.model.credentials import MerossCloudCreds
 from meross_iot.model.enums import OnlineStatus, Namespace
 from meross_iot.model.http.device import HttpDeviceInfo
 from meross_iot.model.http.exception import TokenExpiredException, BadLoginException, \
     UnauthorizedException, HttpApiError
 
-logger = logging.getLogger()
+logger = logging.getLogger('meross_coordinator')
 DEFAULT_USER_AGENT = "MerossJEE/1.0.0"
 
 
@@ -107,26 +107,14 @@ class MerossCoordinator:
             logger.error(f'error : {err}')
             raise err
 
-    def find_devices(
-            self,
-            device_uuids: Optional[Iterable[str]] = None,
-            internal_ids: Optional[Iterable[str]] = None,
-            device_type: Optional[str] = None,
-            device_class: Optional[Union[type, Iterable[type]]] = None,
-            device_name: Optional[str] = None,
-            online_status: Optional[OnlineStatus] = None,
-    ) -> List[T]:
-        return self._manager.find_devices(device_uuids, internal_ids, device_type,
-                                          device_class, device_name, online_status)
-
     async def sync_device(self, uuid):
-        device_tab = self.find_devices(device_uuids=[uuid])
+        device_tab = self._manager.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
             return await get_one_device_meross(device)
 
     async def set_on(self, uuid, channel=0):
-        device_tab = self.find_devices(device_uuids=[uuid])
+        device_tab = self._manager.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
             if Namespace.GARAGE_DOOR_STATE.value in device.abilities.keys():
@@ -138,7 +126,7 @@ class MerossCoordinator:
             return 'Unknow device'
 
     async def set_off(self, uuid, channel=0):
-        device_tab = self.find_devices(device_uuids=[uuid])
+        device_tab = self._manager.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
             if Namespace.GARAGE_DOOR_STATE.value in device.abilities.keys():
@@ -150,7 +138,7 @@ class MerossCoordinator:
             return 'Unknow device'
 
     async def set_lumi(self, uuid, lumi_int):
-        device_tab = self.find_devices(device_uuids=[uuid])
+        device_tab = self._manager.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
             await device.async_set_light_color(luminance=int(lumi_int))
@@ -159,7 +147,7 @@ class MerossCoordinator:
             return 'Unknow device'
 
     async def set_temp(self, uuid, temp_int, lumi=-1):
-        device_tab = self.find_devices(device_uuids=[uuid])
+        device_tab = self._manager.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
             await device.async_set_light_color(temperature=temp_int, luminance=lumi)
@@ -168,7 +156,7 @@ class MerossCoordinator:
             return 'Unknow device'
 
     async def set_rgb(self, uuid, rgb_int, lumi=-1):
-        device_tab = self.find_devices(device_uuids=[uuid])
+        device_tab = self._manager.find_devices(device_uuids=[uuid])
         if device_tab is not None:
             device = device_tab[0]
             await device.async_set_light_color(rgb=int(rgb_int), luminance=lumi)
@@ -192,7 +180,7 @@ class MerossCoordinator:
         return 'Not Implemented Yet'
 
     async def get_devices_meross(self):
-        devices = self.find_devices()
+        devices = self._manager.find_devices()
         logging.debug(f"liste des devices : {devices}")
         return await asyncio.gather(
             *(get_one_device_meross(device) for device in devices))
@@ -200,8 +188,8 @@ class MerossCoordinator:
     async def update_meross_conso(self):
         try:
             async with async_timeout.timeout(30):
-                devices = self.find_devices(device_class=ConsumptionXMixin,
-                                            online_status=OnlineStatus.ONLINE)
+                devices = self._manager.find_devices(device_class=ConsumptionXMixin,
+                                                     online_status=OnlineStatus.ONLINE)
                 devices_update = await asyncio.gather(
                     *(get_device_consumption(device) for device in devices))
                 return devices_update

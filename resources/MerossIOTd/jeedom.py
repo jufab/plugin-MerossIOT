@@ -1,15 +1,14 @@
+import asyncio
 import json
 import logging
-import threading
-import time
 from typing import List
 
-import requests
+import httpx
 from meross_iot.controller.device import BaseDevice
 from meross_iot.model.enums import Namespace
 from meross_iot.model.push.generic import GenericPushNotification
 
-logger = logging.getLogger()
+logger = logging.getLogger('jeedom')
 
 
 # Envoi vers Jeedom ------------------------------------------------------------
@@ -17,85 +16,64 @@ class JeedomCallback:
     def __init__(self, apikey, url):
         self.apikey = apikey
         self.url = url
-        self.messages = []
-        self._stop = False
-        self.t = threading.Thread(target=self.run)
-        self.t.setDaemon(True)
-        self.t.start()
 
-    def stop(self):
-        self._stop = True
+    async def send_message(self, message):
+        async with httpx.AsyncClient() as client:
+            response = None
+            logger.debug(f'Envoie à jeedom :  {message}')
+            r = await client.post(f'{self.url}?apikey={self.apikey}', data=json.dumps(message))
+            if r.status_code != 200:
+                logger.error(
+                    f'Erreur envoie requête à jeedom, return code {r.status_code} - {r.reason}')
+            else:
+                response = r.json()
+                logger.debug(f'Réponse de jeedom :  {response}')
+            return response
 
-    def send(self, message):
-        self.messages.append(message)
-        logger.debug('Nouveau message : {}'.format(message))
-        logger.debug('Nombre de messages : {}'.format(len(self.messages)))
-
-    def send_now(self, message):
-        return self._request(message)
-
-    def run(self):
-        while not self._stop:
-            while self.messages:
-                m = self.messages.pop(0)
-                try:
-                    self._request(m)
-                except Exception as error:
-                    logger.error('Erreur envoie requête à jeedom {}'.format(error))
-            time.sleep(0.5)
-
-    def _request(self, m):
-        response = None
-        logger.debug('Envoie à jeedom :  {}'.format(m))
-        r = requests.post('{}?apikey={}'.format(self.url, self.apikey), data=json.dumps(m),
-                          verify=False)
-        if r.status_code != 200:
-            logger.error(
-                'Erreur envoie requête à jeedom, return code {} - {}'.format(r.status_code,
-                                                                             r.reason))
-        else:
-            response = r.json()
-            logger.debug('Réponse de jeedom :  {}'.format(response))
-        return response
-
-    def test(self):
+    async def test(self):
         logger.debug('Envoi un test à jeedom')
-        r = self.send_now({'action': 'test'})
+        r = await self.send_message({'action': 'test'})
         if not r or not r.get('success'):
             logger.error('Erreur envoi à jeedom')
             return False
         return True
 
-    async def event_handler(self, push: GenericPushNotification, devices: List[BaseDevice], device_internal_id: str):
+    async def event_handler(self, push: GenericPushNotification, devices: List[BaseDevice],
+                            device_internal_id: str):
+        logger.debug(
+            f'Reception de {push.namespace} et {push.raw_data} pour la liste d appareils {devices}')
         if push.namespace == Namespace.CONTROL_TOGGLEX:
-            for index, device in enumerate(devices):
-                self.send(
-                    {'action': 'switch', 'uuid': device.uuid,
-                     'channel': push.raw_data['togglex'][index]['channel'],
-                     'status': int(push.raw_data['togglex'][index]['onoff'])
-                     })
+            return await asyncio.gather(
+                *(self.send_message({'action': 'switch', 'uuid': device.uuid,
+                                     'channel': push.raw_data['togglex'][index]['channel'],
+                                     'status': int(
+                                         push.raw_data['togglex'][index]['onoff'])})
+                  for index, device in enumerate(devices)))
 
         elif push.namespace == Namespace.SYSTEM_ONLINE:
-            for index, device in enumerate(devices):
-                self.send({'action': 'online', 'uuid': device.uuid,
-                           'status': push.raw_data['online'][index]['status']
-                           })
+            return await asyncio.gather(
+                *(self.send_message({'action': 'online', 'uuid': device.uuid,
+                                     'status': push.raw_data['online'][index]['status']})
+                  for index, device in enumerate(devices)))
 
         # Not sure...
         elif push.namespace == Namespace.GARAGE_DOOR_STATE:
-            for index, device in enumerate(devices):
-                self.send({'action': 'door', 'uuid': device.uuid,
-                           'channel': push.raw_data['door'][index]['channel'],
-                           'status': push.raw_data['door'][index]['door_state']})
+            return await asyncio.gather(
+                *(self.send_message({'action': 'door', 'uuid': device.uuid,
+                                     'channel': push.raw_data['door'][index]['channel'],
+                                     'status': push.raw_data['door'][index]['door_state']})
+                  for index, device in enumerate(devices)))
 
         elif push.namespace == Namespace.CONTROL_BIND:
-            for index, device in enumerate(devices):
-                self.send(
+            return await asyncio.gather(
+                *(self.send_message(
                     {'action': 'bind', 'uuid': device.uuid, 'data': push.raw_data['bind'][index]})
+                    for index, device in enumerate(devices)))
 
         elif push.namespace == Namespace.CONTROL_UNBIND:
-            for device in enumerate(devices):
-                self.send({'action': 'unbind', 'uuid': device.uuid})
+            return await asyncio.gather(
+                *(self.send_message({'action': 'unbind', 'uuid': device.uuid}) for index, device in
+                  enumerate(devices)))
 
         # TODO
         # HUMIDIFIER
