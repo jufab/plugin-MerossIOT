@@ -80,10 +80,8 @@ if( $action == 'online' ) {
     }
 } elseif( $action == 'electricity' ) {
     log::add('MerossIOT', 'debug', __('Traitement de ', __FILE__).$action);
-    foreach( $result['values'] as $uuid=>$data ) {
-        log::add('MerossIOT', 'debug', 'uuid : '.$uuid);
-        log::add('MerossIOT', 'debug', 'data : '.$data);
-        $eqLogic = eqLogic::byLogicalId($uuid, 'MerossIOT');
+    foreach( $result['values'] as $index=>$data ) {
+        $eqLogic = eqLogic::byLogicalId($data['uuid'], 'MerossIOT');
         if( is_object($eqLogic) ) {
             $eqLogic->checkAndUpdateCmd("power", $data['power']);
             $eqLogic->checkAndUpdateCmd("current", $data['current']);
