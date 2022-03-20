@@ -268,7 +268,7 @@ async def get_device_consumption(device: ConsumptionXMixin):
         for c in conso:
             dateconso = c['date'].strftime("%Y-%m-%d")
             if dateconso == today:
-                d['conso_totale'] = c['value']
+                d['conso_totale'] = c['total_consumption_kwh']
         return d
     except Exception as e:
         logger.error(f'[get_device_consumption] error : {e}')
