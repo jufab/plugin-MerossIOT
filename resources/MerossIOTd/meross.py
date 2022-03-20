@@ -130,16 +130,10 @@ class MerossCoordinator:
         if device_tab is not None:
             device = device_tab[0]
             if Namespace.GARAGE_DOOR_STATE.value in device.abilities.keys():
-                await device.async_close(channel=channel)
+                await device.async_close(channel=int(channel))
             else:
-                await device.async_turn_on(channel=channel)
-            response = dict({
-                'action': 'switch',
-                'uuid': uuid,
-                'channel': channel,
-                'status': 1 if device.is_on(channel=channel) else 0
-            })
-            return response
+                await device.async_turn_on(channel=int(channel))
+            return
         else:
             return 'Unknow device'
 
@@ -151,13 +145,7 @@ class MerossCoordinator:
                 await device.async_open(channel=int(channel))
             else:
                 await device.async_turn_off(channel=int(channel))
-            response = dict({
-                'action': 'switch',
-                'uuid': uuid,
-                'channel': channel,
-                'status': 1 if device.is_on(channel=channel) else 0
-            })
-            return response
+            return
         else:
             return 'Unknow device'
 

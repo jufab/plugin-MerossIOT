@@ -1,18 +1,15 @@
-import asyncio
 import json
 import logging
-import socketserver
 import threading
 import time
 from typing import List
 
 import requests
 from meross_iot.controller.device import BaseDevice
-from meross_iot.controller.mixins.consumption import ConsumptionXMixin
-from meross_iot.model.enums import Namespace, OnlineStatus
+from meross_iot.model.enums import Namespace
 from meross_iot.model.push.generic import GenericPushNotification
 
-from meross import MerossCoordinator
+logger = logging.getLogger()
 
 
 # Envoi vers Jeedom ------------------------------------------------------------
@@ -31,8 +28,8 @@ class JeedomCallback:
 
     def send(self, message):
         self.messages.append(message)
-        logging.debug('Nouveau message : {}'.format(message))
-        logging.debug('Nombre de messages : {}'.format(len(self.messages)))
+        logger.debug('Nouveau message : {}'.format(message))
+        logger.debug('Nombre de messages : {}'.format(len(self.messages)))
 
     def send_now(self, message):
         return self._request(message)
@@ -44,59 +41,60 @@ class JeedomCallback:
                 try:
                     self._request(m)
                 except Exception as error:
-                    logging.error('Erreur envoie requête à jeedom {}'.format(error))
+                    logger.error('Erreur envoie requête à jeedom {}'.format(error))
             time.sleep(0.5)
 
     def _request(self, m):
         response = None
-        logging.debug('Envoie à jeedom :  {}'.format(m))
+        logger.debug('Envoie à jeedom :  {}'.format(m))
         r = requests.post('{}?apikey={}'.format(self.url, self.apikey), data=json.dumps(m),
                           verify=False)
         if r.status_code != 200:
-            logging.error(
+            logger.error(
                 'Erreur envoie requête à jeedom, return code {} - {}'.format(r.status_code,
                                                                              r.reason))
         else:
             response = r.json()
-            logging.debug('Réponse de jeedom :  {}'.format(response))
+            logger.debug('Réponse de jeedom :  {}'.format(response))
         return response
 
     def test(self):
-        logging.debug('Envoi un test à jeedom')
+        logger.debug('Envoi un test à jeedom')
         r = self.send_now({'action': 'test'})
         if not r or not r.get('success'):
-            logging.error('Erreur envoi à jeedom')
+            logger.error('Erreur envoi à jeedom')
             return False
         return True
 
-    async def event_handler(self, push: GenericPushNotification, devices: List[BaseDevice]):
-        logging.debug("Event : {}".format(push.namespace))
+    async def event_handler(self, push: GenericPushNotification, devices: List[BaseDevice], device_internal_id: str):
         if push.namespace == Namespace.CONTROL_TOGGLEX:
-            for index, device in devices:
+            for index, device in enumerate(devices):
                 self.send(
                     {'action': 'switch', 'uuid': device.uuid,
-                     'channel': push.raw_data['togglex'][index].channel,
-                     'status': int(push.raw_data['togglex'][index].onoff)})
+                     'channel': push.raw_data['togglex'][index]['channel'],
+                     'status': int(push.raw_data['togglex'][index]['onoff'])
+                     })
 
         elif push.namespace == Namespace.SYSTEM_ONLINE:
-            for index, device in devices:
+            for index, device in enumerate(devices):
                 self.send({'action': 'online', 'uuid': device.uuid,
-                           'status': push.raw_data['online'][index].status})
+                           'status': push.raw_data['online'][index]['status']
+                           })
 
         # Not sure...
         elif push.namespace == Namespace.GARAGE_DOOR_STATE:
-            for index, device in devices:
+            for index, device in enumerate(devices):
                 self.send({'action': 'door', 'uuid': device.uuid,
-                           'channel': push.raw_data['door'][index].channel,
-                           'status': push.raw_data['door'][index].door_state})
+                           'channel': push.raw_data['door'][index]['channel'],
+                           'status': push.raw_data['door'][index]['door_state']})
 
         elif push.namespace == Namespace.CONTROL_BIND:
-            for index, device in devices:
+            for index, device in enumerate(devices):
                 self.send(
                     {'action': 'bind', 'uuid': device.uuid, 'data': push.raw_data['bind'][index]})
 
         elif push.namespace == Namespace.CONTROL_UNBIND:
-            for device in devices:
+            for device in enumerate(devices):
                 self.send({'action': 'unbind', 'uuid': device.uuid})
 
         # TODO
