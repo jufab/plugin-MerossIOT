@@ -27,7 +27,6 @@ $eqLogics = MerossIOT::byType('MerossIOT');
         <th>{{Nom}}</th>
         <th>{{ID}}</th>
         <th>{{Modèle}}</th>
-        <th>{{IP}}</th>
         <th>{{En ligne}}</th>
         <th>{{Date création}}</th>
         <th>{{Date dernière communication}}</th>
