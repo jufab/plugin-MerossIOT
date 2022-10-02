@@ -108,7 +108,8 @@ if __name__ == "__main__":
     if os.path.exists(_sockfile):
         os.unlink(_sockfile)
 
-    format_log = '[%(asctime)s][%(levelname)s][%(name)s](%(threadName)s) : %(message)s'
+    format_log = '[%(asctime)s][%(name)s](%(threadName)s)[%(levelname)s] : %(message)s'
+    formatter = logging.Formatter(format_log)
     logging.basicConfig(level=logging.getLevelName(args.loglevel.upper()), format=format_log,
                         datefmt="%Y-%m-%d %H:%M:%S", force=True)
     logging.getLogger("meross_iot").setLevel(logging.getLevelName(args.loglevel.upper()))
