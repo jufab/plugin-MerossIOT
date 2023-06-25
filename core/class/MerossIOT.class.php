@@ -124,14 +124,15 @@ class MerossIOT extends eqLogic
                 $eqLogic->setConfiguration('online', '0');
             }
         }
+        log::add('MerossIOT', 'debug', 'syncOneMeross: Création des commandes : '.$device['onoff'].' - '.$key);
+        # Les Commandes
+        self::updateEqLogicCmds($eqLogic, $device);
+        self::updateEqLogicVals($eqLogic, $device['values']);
         # Si online, on continue
         log::add('MerossIOT', 'debug', 'syncOneMeross: En ligne : '.$device['online'].' - '.$key);
         if ($device['online']) {
             $eqLogic->setIsEnable(1);
             $eqLogic->save();
-            # Les Commandes
-            self::updateEqLogicCmds($eqLogic, $device);
-            self::updateEqLogicVals($eqLogic, $device['values']);
         } else {
             $eqLogic->setIsEnable(0);
             $eqLogic->save();
