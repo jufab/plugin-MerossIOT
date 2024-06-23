@@ -2,6 +2,7 @@
 *.iml
 .python-version
 venv37
+start-venv.sh
 
 *.pid
 *.sock

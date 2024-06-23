@@ -202,7 +202,7 @@ async def get_or_renew_creds(
         email: str,
         password: str,
         stored_creds: MerossCloudCreds = None,
-        http_api_url: str = "https://iot.meross.com",
+        http_api_url: str = "https://iotx-eu.meross.com",
         ua_header: str = DEFAULT_USER_AGENT
 ) -> Tuple[MerossHttpClient, List[HttpDeviceInfo], bool]:
     try:
