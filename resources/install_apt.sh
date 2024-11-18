@@ -25,3 +25,4 @@ sudo python3 -m pip install meross_iot==$meross_version
 echo 100 > ${PROGRESS_FILE}
 echo "Installation des dépendances terminée !"
 rm ${PROGRESS_FILE}
+exit 0
